@@ -2,111 +2,268 @@ const Discord = require('discord.js');
 const { prefix, token } = require('./config.json');
 const client = new Discord.Client();
 var request = require('request');
+var cheerio = require('cheerio');
+var statePops = require('./statePops.json');
 client.once('ready', () => {
-	console.log('Ready!');
+        console.log('Ready!');
 });
 
 client.on('message', message => {
-	if (!message.content.startsWith(prefix) || message.author.bot) return;
+        if (!message.content.startsWith(prefix) || message.author.bot) return;
 
-	const args = message.content.slice(prefix.length).split(/ +/);
-	const command = args.shift().toLowerCase();
+        var args = message.content.slice(prefix.length).split(/ +/);
+        const command = args.shift().toLowerCase();
 
-	if (command === 'roll') {
-		max = Math.floor(parseInt(args[0]));
-		min = Math.ceil(1);
+        if (command === 'roll') {
+                max = Math.floor(parseInt(args[0]));
+                min = Math.ceil(1);
 
-		if (isNaN(max)) {
-			return message.reply('that doesn\'t seem to be a valid number.');
-		} 
+                if (isNaN(max)) {
+                        return message.reply('that doesn\'t seem to be a valid number.');
+                }
 
-		return message.reply(Math.floor(Math.random() * (max - min + 1)) + min);
-	}
-
-
+                return message.reply(Math.floor(Math.random() * (max - min + 1)) + min);
+        }
 
 
 
+        if (command === 'rank') {
+			if (args[2]){
+				message.channel.send(`too many args`);
+			}
+
+					else if (args[1]) {
+						var url = 'https://classic.warcraftlogs.com/character/us/'+ args[1] +'/' + args[0];
+						request(url, function(err, resp, body){
+
+						  	$ = cheerio.load(body);
+						  	var list = [];
+							$('div[id="character-inset"]').find('div > div > div > div > div > div > span').each(function (index, element) {
+						  	list.push($(element).html())
+							});
+						  	var bwlRank = list[1]
+						  	var mcRank = list[3]
+			    			const rankReport = new Discord.MessageEmbed()
+								.setColor('#4A24D4')
+								.setTitle('Current Player Ranking')
+								.setURL(url)
+								//.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+								.setDescription(args[0] + ' - ' + args[1])
+								.setThumbnail('https://dmszsuqyoe6y6.cloudfront.net/img/warcraft/favicon.png')
+								.addFields(
+									{ name: 'BWL Ranking', value: `${bwlRank}`, inline: true},
+									{ name: 'MC Ranking', value: `${mcRank}`, inline: true }
+								)
+								//.addField('Inline field title', 'Some value here', true)
+													//.setImage('https://i.imgur.com/wSTFkRM.png')
+								.setTimestamp()
+								.setFooter('Data: classic.warcraftlogs.com/');
+								message.channel.send(rankReport);
 
 
-	if (command === 'ony') {
-		const DAYS = 24 * 3600 * 1000;
-		var resetTime = new Date("Dec 6, 2019 11:00:00 GMT-05:00").getTime()
-		var interval = 5 * DAYS
-		const now = new Date().getTime();
-		while (resetTime < now) resetTime += interval
-		const tSecs = Math.floor((resetTime - now) / 1000);
-		const secs = tSecs % 60;
-		const tMins = (tSecs - secs) / 60;
-		const mins = tMins % 60;
-		const tHours = (tMins - mins) / 60;
-		const hours = tHours % 24;
-		const days = (tHours - hours) / 24;
-		const reset = new Date(resetTime);
+						});
+						
 
-		console.log(`${days}d ${hours}h ${mins}m ${secs}s`);
-		message.reply("Time Until Ony Reset: " + `${days}d ${hours}h ${mins}m ${secs}s`);
-		//console.log( $('#onyReset')[1].text() ); // input 
-		message.reply("Ony Reset Date and Time: " + `${reset}`);
-	}
+					}
 
 
-	if (command === 'cv') {
-		if (args == ''){
-			request('https://covid19.mathdro.id/api', function (error, response, body) {
-		    	if (!error && response.statusCode == 200) {
-		    	
-		        	var json = JSON.parse(body); 
-		        	console.log(args)
-					var confirmed = json.confirmed.value
-					var recovered = json.recovered.value
-					var deaths = json.deaths.value
-				
-					var affected = confirmed + recovered + deaths
+					else{	
+						var url = 'https://classic.warcraftlogs.com/character/us/skeram/' + args[0];
+						request(url, function(err, resp, body){
 
-					var confirmedPer=Math.round(confirmed/affected*100)
-					var deathsPer = Math.round(deaths/affected*100)
-					var recoveredPer = Math.round(recovered/affected*100)
-
-
-					message.reply("Total confirmed to have CV: " + `${confirmed.toLocaleString('en')}` + " - " + `${confirmedPer}` + "%");
-					message.reply("Total confirmed recovered from CV: " + `${recovered.toLocaleString('en')}` + " - " + `${recoveredPer}` + "%");
-					message.reply("Total confirmed died from CV: " + `${deaths.toLocaleString('en')}` + " - " + `${deathsPer}` + "%");
-
-		     	}
-			})
-
-
-		}
-		else{	
-
-			var today = new Date();
-			var dd = String(today.getDate()).padStart(2, '0') -1; //subtracting one to pull yesterday
-			var mm = String(today.getMonth() + 1).padStart(2, '0'); 
-			var yyyy = today.getFullYear();
-			today = mm + '/' + dd + '/' + yyyy;
-			var url = 'https://covid19.mathdro.id/api/daily/' + mm + '-' + dd +'-' + yyyy
-			request(url, function (error, response, body) {
-	    		if (!error && response.statusCode == 200) {
-	        		var json = JSON.parse(body); 
-		 			function myFunction(dataFromServer){ 
-		       			for (var i=0;i<dataFromServer.length;i++) { 
-		            		if (dataFromServer[i].provinceState == args){
-		            			message.reply(`${dataFromServer[i].provinceState}` + " COVID19 Cases - last update:  " + `${dataFromServer[i].lastUpdate}` + "\nConfirmed: " + `${dataFromServer[i].confirmed}` + "  Recovered: " + `${dataFromServer[i].recovered}` + "  Deaths: " + `${dataFromServer[i].deaths}`)
-		            			return
-		            		}       
-		         		}
-		 			}	
-	 			myFunction(json)
-	     		}
-			})
+						  	$ = cheerio.load(body);
+						  	var list = [];
+							$('div[id="character-inset"]').find('div > div > div > div > div > div > span').each(function (index, element) {
+						  	list.push($(element).html())
+							});
+						  	var bwlRank = list[1]
+						  	var mcRank = list[3]
+						  	const rankReport = new Discord.MessageEmbed()
+								.setColor('#4A24D4')
+								.setTitle('Current Player Ranking')
+								.setURL(url)
+								//.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+								.setDescription(args[0] + ' - Skeram')
+								.setThumbnail('https://dmszsuqyoe6y6.cloudfront.net/img/warcraft/favicon.png')
+								.addFields(
+									{ name: 'BWL Ranking', value: `${bwlRank}`, inline: true},
+									{ name: 'MC Ranking', value: `${mcRank}`, inline: true }
+								)
+								//.addField('Inline field title', 'Some value here', true)
+													//.setImage('https://i.imgur.com/wSTFkRM.png')
+								.setTimestamp()
+								.setFooter('Data: classic.warcraftlogs.com/');
+								message.channel.send(rankReport);
+						});
+						
 
 
+						}
+				}
 
 
-		}
+        if (command === 'tsarbot' || command === 'czarbot') {
+            
+                help = "```!ony " +
+                                "\nReports the next reset time for onyxia. "+
+                                "\n!zg "+
+                                "\nReports the next reset time for Zul Gurub. "+
+                                "\n!roll [x] "+
+                                "\nGenerates a random number between 1 and x. "+
+                                "\n!cv [state] "+
+                                "\nCV will generate a COVID 19 status update. State is an optional argument. If no state is provided, worldwide counts will be provided. "+
+                                "\n!rank [player] [server]"+
+                                "\nGenerates current warcraft logs ranking for the provided player. Server is optional. If no server is provided the default is skeram. ```"
 
-	}
+                message.channel.send(help);
+        }
+
+
+        if (command === 'ony') {
+                const DAYS = 24 * 3600 * 1000;
+                var resetTime = new Date("Dec 6, 2019 11:00:00 GMT-05:00").getTime()
+                var interval = 5 * DAYS
+                const now = new Date().getTime();
+                while (resetTime < now) resetTime += interval
+                const tSecs = Math.floor((resetTime - now) / 1000);
+                const secs = tSecs % 60;
+                const tMins = (tSecs - secs) / 60;
+                const mins = tMins % 60;
+                const tHours = (tMins - mins) / 60;
+                const hours = tHours % 24;
+                const days = (tHours - hours) / 24;
+                const reset = new Date(resetTime);
+
+                console.log(`${days}d ${hours}h ${mins}m ${secs}s`);
+                message.reply("Time Until Ony Reset: " + `${days}d ${hours}h ${mins}m ${secs}s`);
+                //console.log( $('#onyReset')[1].text() ); // input
+                message.reply("Ony Reset Date and Time: " + `${reset}`);
+        }
+
+        if (command === 'zg') {
+                const DAYS = 24 * 3600 * 1000;
+                var resetTime = new Date("Apr 16, 2020 11:00:00 GMT-05:00").getTime()
+                var interval = 3 * DAYS
+                const now = new Date().getTime();
+                while (resetTime < now) resetTime += interval
+                const tSecs = Math.floor((resetTime - now) / 1000);
+                const secs = tSecs % 60;
+                const tMins = (tSecs - secs) / 60;
+                const mins = tMins % 60;
+                const tHours = (tMins - mins) / 60;
+                const hours = tHours % 24;
+                const days = (tHours - hours) / 24;
+                const reset = new Date(resetTime).toString();
+                const resetString = reset.split(" ")[0] + " " + reset.split(" ")[1] + " " + reset.split(" ")[2] ;
+                const nextReset = new Date(resetTime += interval).toString();
+                const nextResetString = nextReset.split(" ")[0] + " " + nextReset.split(" ")[1] + " " + nextReset.split(" ")[2] ;
+                const nextNextReset = new Date(resetTime += interval).toString();
+                const nextNextResetString = nextNextReset.split(" ")[0] + " " + nextNextReset.split(" ")[1] + " " + nextNextReset.split(" ")[2] ;
+
+
+                const zgReport = new Discord.MessageEmbed()
+                .setColor('#285818')
+                .setTitle('Zul Gurub Reset Timer')
+                .setURL('https://us.forums.blizzard.com/en/wow/t/zulgurub-raid-resets/491994')
+                //.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+                .setDescription( 'Here are the next 3 ZG reset dates. Resets occur at 12PM server time.')
+                .setThumbnail('https://static.boostbay.com/site/images/landing/common/first-block/classic/10_raids_zulgurub-boost_max.png')
+                .addFields(
+                        { name: 'Time Until Next ZG Reset', value: `${days}d ${hours}h ${mins}m ${secs}s`, inline:true},
+                        { name: 'ZG Reset Date and Time', value: `${resetString}`, inline: true},
+                        {name: '\u200b',value: '\u200b',inline: false,},
+                        { name: 'Reset Date and Time 2', value: `${nextResetString}`, inline:true},
+                        { name: 'Reset Date and Time 3', value: `${nextNextResetString}` , inline:true}
+                )
+
+                //.setImage('https://i.imgur.com/wSTFkRM.png')
+                .setTimestamp()
+                //.setFooter('Source: us.forums.blizzard.com/en/wow/t/zulgurub-raid-resets/491994');
+                message.channel.send(zgReport);
+
+        }
+
+
+        if (command === 'cv') {
+                if (args == ''){
+                        request('https://covid19.mathdro.id/api', function (error, response, body) {
+                        if (!error && response.statusCode == 200) {
+                                console.log()
+                                var json = JSON.parse(body);
+                                console.log(args)
+                                        var confirmed = json.confirmed.value
+                                        var recovered = json.recovered.value
+                                        var deaths = json.deaths.value
+
+                                        var affected = confirmed + recovered + deaths
+
+                                        var confirmedPer=Math.round(confirmed/affected*100)
+                                        var deathsPer = Math.round(deaths/affected*100)
+                                        var recoveredPer = Math.round(recovered/affected*100)
+
+
+                                        message.reply("Total confirmed to have CV: " + `${confirmed.toLocaleString('en')}` + " - " + `${confirmedPer}` + "%");
+                                        message.reply("Total confirmed recovered from CV: " + `${recovered.toLocaleString('en')}` + " - " + `${recoveredPer}` + "%");
+                                        message.reply("Total confirmed died from CV: " + `${deaths.toLocaleString('en')}` + " - " + `${deathsPer}` + "%");
+
+                        }
+                        })
+
+
+                }
+                else{
+
+                        if (args[1]){
+                                args = args.join(" ");
+                        }
+                        else{
+                                args = args[0]
+                        }
+                        var url = 'https://corona.lmao.ninja/v2/states'
+                        request(url, function (error, response, body) {
+                        if (!error && response.statusCode == 200) {
+                                var covidJson = JSON.parse(body);
+
+                                        for (var i=0;i<covidJson.length;i++) {
+                                        if (covidJson[i].state.toUpperCase() == args.toUpperCase()){
+
+                                                for (var j=0; j < statePops.length; j++)
+                                                                if (statePops[j].state.toUpperCase() == args.toUpperCase()){
+                                                                        var cpm = ( covidJson[i].active / (statePops[j].pop / 1000000) ).toFixed(2);
+                                                                        var recovered = covidJson[i].cases - covidJson[i].active
+                                                                        console.log(recovered);
+                                                                        console.log(covidJson[i].active);
+                                                                        console.log(covidJson[i].deaths);
+
+                                                                        const flashReport = new Discord.MessageEmbed()
+                                                                                .setColor('#0099ff')
+                                                                                .setTitle('COVID Flash Report')
+                                                                                .setURL('https://www.worldometers.info/coronavirus/')
+                                                                                //.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+                                                                                .setDescription('Breakdown of cases in ' + `${covidJson[i].state}`)
+                                                                                .setThumbnail('https://assets.dmagstatic.com/wp-content/uploads/2020/03/COVID-19_2871.jpg')
+                                                                                .addFields(
+                                                                                        { name: 'Confirmed', value: `${covidJson[i].active.toLocaleString('en')}`, inline: true },
+                                                                                        { name: 'Cases Today', value: `${covidJson[i].todayCases.toLocaleString('en')}`, inline: true },
+                                                                                        { name: 'Deaths', value: `${covidJson[i].deaths.toLocaleString('en')}`, inline: true },
+                                                                                        //{ name: '\u200B', value: '\u200B' },
+                                                                                        { name: 'State Population', value: `${statePops[j].pop.toLocaleString('en')}`, inline: true },
+                                                                                        { name: 'Cases Per Million', value: `${cpm.toLocaleString('en')}`, inline: true },
+                                                                                )
+                                                                                //.addField('Inline field title', 'Some value here', true)
+                                                                                //.setImage('https://i.imgur.com/wSTFkRM.png')
+                                                                                .setTimestamp()
+                                                                                .setFooter('Data: worldometers.info/coronavirus/');
+                                                                                message.channel.send(flashReport);
+
+                                                                return
+                                                        }
+                                        }
+                                        }
+                                        }
+                        })
+                }
+        }
 
 
 
