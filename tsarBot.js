@@ -28,78 +28,78 @@ client.on('message', message => {
 
 
         if (command === 'rank') {
-			if (args[2]){
-				message.channel.send(`too many args`);
-			}
+                        if (args[2]){
+                                message.channel.send(`too many args`);
+                        }
 
-					else if (args[1]) {
-						var url = 'https://classic.warcraftlogs.com/character/us/'+ args[1] +'/' + args[0];
-						request(url, function(err, resp, body){
+                                        else if (args[1]) {
+                                                var url = 'https://classic.warcraftlogs.com/character/us/'+ args[1] +'/' + args[0];
+                                                request(url, function(err, resp, body){
 
-						  	$ = cheerio.load(body);
-						  	var list = [];
-							$('div[id="character-inset"]').find('div > div > div > div > div > div > span').each(function (index, element) {
-						  	list.push($(element).html())
-							});
-						  	var bwlRank = list[1]
-						  	var mcRank = list[3]
-			    			const rankReport = new Discord.MessageEmbed()
-								.setColor('#4A24D4')
-								.setTitle('Current Player Ranking')
-								.setURL(url)
-								//.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
-								.setDescription(args[0] + ' - ' + args[1])
-								.setThumbnail('https://dmszsuqyoe6y6.cloudfront.net/img/warcraft/favicon.png')
-								.addFields(
-									{ name: 'BWL Ranking', value: `${bwlRank}`, inline: true},
-									{ name: 'MC Ranking', value: `${mcRank}`, inline: true }
-								)
-								//.addField('Inline field title', 'Some value here', true)
-													//.setImage('https://i.imgur.com/wSTFkRM.png')
-								.setTimestamp()
-								.setFooter('Data: classic.warcraftlogs.com/');
-								message.channel.send(rankReport);
-
-
-						});
-						
-
-					}
+                                                        $ = cheerio.load(body);
+                                                        var list = [];
+                                                        $('div[id="character-inset"]').find('div > div > div > div > div > div > span').each(function (index, element) {
+                                                        list.push($(element).html())
+                                                        });
+                                                        var bwlRank = list[1]
+                                                        var mcRank = list[3]
+                                                const rankReport = new Discord.MessageEmbed()
+                                                                .setColor('#4A24D4')
+                                                                .setTitle('Current Player Ranking')
+                                                                .setURL(url)
+                                                                //.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+                                                                .setDescription(args[0] + ' - ' + args[1])
+                                                                .setThumbnail('https://dmszsuqyoe6y6.cloudfront.net/img/warcraft/favicon.png')
+                                                                .addFields(
+                                                                        { name: 'BWL Ranking', value: `${bwlRank}`, inline: true},
+                                                                        { name: 'MC Ranking', value: `${mcRank}`, inline: true }
+                                                                )
+                                                                //.addField('Inline field title', 'Some value here', true)
+                                                                                                        //.setImage('https://i.imgur.com/wSTFkRM.png')
+                                                                .setTimestamp()
+                                                                .setFooter('Data: classic.warcraftlogs.com/');
+                                                                message.channel.send(rankReport);
 
 
-					else{	
-						var url = 'https://classic.warcraftlogs.com/character/us/skeram/' + args[0];
-						request(url, function(err, resp, body){
+                                                });
+                                                
 
-						  	$ = cheerio.load(body);
-						  	var list = [];
-							$('div[id="character-inset"]').find('div > div > div > div > div > div > span').each(function (index, element) {
-						  	list.push($(element).html())
-							});
-						  	var bwlRank = list[1]
-						  	var mcRank = list[3]
-						  	const rankReport = new Discord.MessageEmbed()
-								.setColor('#4A24D4')
-								.setTitle('Current Player Ranking')
-								.setURL(url)
-								//.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
-								.setDescription(args[0] + ' - Skeram')
-								.setThumbnail('https://dmszsuqyoe6y6.cloudfront.net/img/warcraft/favicon.png')
-								.addFields(
-									{ name: 'BWL Ranking', value: `${bwlRank}`, inline: true},
-									{ name: 'MC Ranking', value: `${mcRank}`, inline: true }
-								)
-								//.addField('Inline field title', 'Some value here', true)
-													//.setImage('https://i.imgur.com/wSTFkRM.png')
-								.setTimestamp()
-								.setFooter('Data: classic.warcraftlogs.com/');
-								message.channel.send(rankReport);
-						});
-						
+                                        }
 
 
-						}
-				}
+                                        else{   
+                                                var url = 'https://classic.warcraftlogs.com/character/us/skeram/' + args[0];
+                                                request(url, function(err, resp, body){
+
+                                                        $ = cheerio.load(body);
+                                                        var list = [];
+                                                        $('div[id="character-inset"]').find('div > div > div > div > div > div > span').each(function (index, element) {
+                                                        list.push($(element).html())
+                                                        });
+                                                        var bwlRank = list[1]
+                                                        var mcRank = list[3]
+                                                        const rankReport = new Discord.MessageEmbed()
+                                                                .setColor('#4A24D4')
+                                                                .setTitle('Current Player Ranking')
+                                                                .setURL(url)
+                                                                //.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+                                                                .setDescription(args[0] + ' - Skeram')
+                                                                .setThumbnail('https://dmszsuqyoe6y6.cloudfront.net/img/warcraft/favicon.png')
+                                                                .addFields(
+                                                                        { name: 'BWL Ranking', value: `${bwlRank}`, inline: true},
+                                                                        { name: 'MC Ranking', value: `${mcRank}`, inline: true }
+                                                                )
+                                                                //.addField('Inline field title', 'Some value here', true)
+                                                                                                        //.setImage('https://i.imgur.com/wSTFkRM.png')
+                                                                .setTimestamp()
+                                                                .setFooter('Data: classic.warcraftlogs.com/');
+                                                                message.channel.send(rankReport);
+                                                });
+                                                
+
+
+                                                }
+                                }
 
 
         if (command === 'tsarbot' || command === 'czarbot') {
@@ -180,6 +180,63 @@ client.on('message', message => {
                 .setTimestamp()
                 //.setFooter('Source: us.forums.blizzard.com/en/wow/t/zulgurub-raid-resets/491994');
                 message.channel.send(zgReport);
+
+        }
+
+
+        if (command === 'dmf') {
+                var d = new Date(),
+                        month = d.getMonth(),
+                        openEndDates = [];
+                        saturdays = [];
+                        sat = new Date();
+
+                    d.setDate(1);
+
+                    // Get the first Monday and satuday in the month
+                    while (d.getDay() !== 1) {
+                        d.setDate(d.getDate() + 1);
+                        sat.setDate(d.getDate()+6);
+                    }
+                    openEndDates.push(new Date(d.getTime()));
+                    openEndDates.push(new Date(sat.getTime()));
+
+                    // Get first monday and saturday of next month
+                    while (d.getMonth() === month ) {
+                        d.setDate(d.getDate() + 7);
+                        sat.setDate(d.getDate()+6);
+                    }
+                    openEndDates.push(new Date(d.getTime()));
+                    openEndDates.push(new Date(sat.getTime()));
+
+                    //date formatting
+                    const openDate = openEndDates[0].toString().split(" ")[0] + " " + openEndDates[0].toString().split(" ")[1] + " " + openEndDates[0].toString().split(" ")[2]  ;
+                    const nOpenDate= openEndDates[2].toString().split(" ")[0] + " " + openEndDates[2].toString().split(" ")[1] + " " + openEndDates[2].toString().split(" ")[2] ;
+                    const endDate = openEndDates[1].toString().split(" ")[0] + " " + openEndDates[1].toString().split(" ")[1] + " " + openEndDates[1].toString().split(" ")[2] ;
+                    const nEndDate = openEndDates[3].toString().split(" ")[0] + " " + openEndDates[3].toString().split(" ")[1] + " " + openEndDates[3].toString().split(" ")[2] ;
+
+                    
+
+
+                        const dmfReport = new Discord.MessageEmbed()
+                        .setColor('#9966ff')
+                        .setTitle('Darkmoon Faire Schedule')
+                        .setURL('https://classic.wowhead.com/guides/classic-darkmoon-faire')
+                        //.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+                        .setDescription( 'Here is the DMF schedule for this month and next month.')
+                        .setThumbnail('https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fvignette1.wikia.nocookie.net%2Fwowwiki%2Fimages%2Ff%2Ff1%2FDarkmoon_faire_banner.png%2Frevision%2Flatest%2Fscale-to-width-down%2F107%3Fcb%3D20140216194729&f=1&nofb=1')
+                        .addFields(
+                                { name: 'Open Date This Month', value: `${openDate}`, inline:true},
+                                { name: 'End Date This Month', value: `${endDate}`, inline: true},
+                                {name: '\u200b',value: '\u200b',inline: false,},
+                                { name: 'Open Date Next Month', value: `${nOpenDate}`, inline:true},
+                                { name: 'End Date Next Month', value: `${nEndDate}` , inline:true}
+                        )
+
+                        //.setImage('https://i.imgur.com/wSTFkRM.png')
+                        .setTimestamp()
+                        //.setFooter('Source: us.forums.blizzard.com/en/wow/t/zulgurub-raid-resets/491994');
+                        message.channel.send(dmfReport);
 
         }
 
