@@ -190,7 +190,7 @@ client.on('message', message => {
                         openEndDates = [];
                         saturdays = [];
                         sat = new Date();
-
+                        sun = new Date();
                     d.setDate(1);
 
                     // Get the first Monday and satuday in the month
@@ -204,10 +204,10 @@ client.on('message', message => {
                     // Get first monday and saturday of next month
                     while (d.getMonth() === month ) {
                         d.setDate(d.getDate() + 7);
-                        sat.setDate(d.getDate()+6);
                     }
-                    openEndDates.push(new Date(d.getTime()));
-                    openEndDates.push(new Date(sat.getTime()));
+                    openEndDates.push(new Date(d.getTime()));//push monday
+                    d.setDate(d.getDate() + 6); //generate saturday
+                    openEndDates.push(new Date(d.getTime()));//push saturday
 
                     //date formatting
                     const openDate = openEndDates[0].toString().split(" ")[0] + " " + openEndDates[0].toString().split(" ")[1] + " " + openEndDates[0].toString().split(" ")[2]  ;
