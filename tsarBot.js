@@ -132,12 +132,21 @@ client.on('message', message => {
                 const tHours = (tMins - mins) / 60;
                 const hours = tHours % 24;
                 const days = (tHours - hours) / 24;
-                const reset = new Date(resetTime);
+                const reset = new Date(resetTime).toString();
+                const resetString = reset.split(" ")[0] + " " + reset.split(" ")[1] + " " + reset.split(" ")[2] ;
 
-                console.log(`${days}d ${hours}h ${mins}m ${secs}s`);
-                message.reply("Time Until Ony Reset: " + `${days}d ${hours}h ${mins}m ${secs}s`);
-                //console.log( $('#onyReset')[1].text() ); // input
-                message.reply("Ony Reset Date and Time: " + `${reset}`);
+                const onyReport = new Discord.MessageEmbed()
+                .setColor('#ff5c33')
+                .setTitle('Onyxia Reset Timer')
+                .setURL('https://raidreset.com/')
+                .setThumbnail('https://gamepedia.cursecdn.com/hearthstone_gamepedia/thumb/7/7a/Onyxia_-_WoW.png/400px-Onyxia_-_WoW.png?version=a4ed3c4ea4d675b1472bdfc5b359c7aa')
+                .addFields(
+                        { name: 'Time Until Next Reset', value: `${days}d ${hours}h ${mins}m ${secs}s`, inline:true},
+                        { name: 'Reset Date', value: `${resetString}`, inline: true},
+                )
+                .setTimestamp()
+                message.channel.send(onyReport);
+
         }
 
         if (command === 'zg') {
