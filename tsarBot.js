@@ -3,6 +3,7 @@ const { prefix, token } = require('./config.json');
 const client = new Discord.Client();
 var request = require('request');
 var cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 var statePops = require('./statePops.json');
 client.once('ready', () => {
         console.log('Ready!');
@@ -43,6 +44,8 @@ client.on('message', message => {
                                                         });
                                                         var bwlRank = list[1]
                                                         var mcRank = list[3]
+
+                                                        
                                                 const rankReport = new Discord.MessageEmbed()
                                                                 .setColor('#4A24D4')
                                                                 .setTitle('Current Player Ranking')
@@ -78,7 +81,35 @@ client.on('message', message => {
                                                         });
                                                         var bwlRank = list[1]
                                                         var mcRank = list[3]
-                                                        const rankReport = new Discord.MessageEmbed()
+                                                        var list2 = [];
+                                                        var results = [];
+                                                        
+                                                     	const img = $('img').attr('src');
+														//console.log(img)	
+
+														var req_url = 'https://classic.warcraftlogs.com/character/us/skeram/' + args[0];
+														
+														puppeteer
+													      .launch()
+													      .then(browser => browser.newPage())
+													      .then(page => {
+													        return page.goto(req_url).then(function() {
+													          return page.content();
+													        });
+													      })
+													      .then(html => {
+													        const $ = cheerio.load(html);
+													        const newsHeadlines = [];
+													        const imgUrlArr = [];
+													        $('div[id="top-box"]' ).find('div > div > div').each(function() {
+													          if ($(this).html().includes(".jpg")) {
+													          	  var imgUrl = $(this).html().split("src=")[1]
+													          	  imgUrl = imgUrl.split('"')[1]
+														          imgUrlArr.push(imgUrl);
+													      	  }
+													        });
+
+													        const rankReport = new Discord.MessageEmbed()
                                                                 .setColor('#4A24D4')
                                                                 .setTitle('Current Player Ranking')
                                                                 .setURL(url)
@@ -90,11 +121,27 @@ client.on('message', message => {
                                                                         { name: 'MC Ranking', value: `${mcRank}`, inline: true }
                                                                 )
                                                                 //.addField('Inline field title', 'Some value here', true)
-                                                                                                        //.setImage('https://i.imgur.com/wSTFkRM.png')
+                                                                .setImage(imgUrlArr[0])
                                                                 .setTimestamp()
                                                                 .setFooter('Data: classic.warcraftlogs.com/');
                                                                 message.channel.send(rankReport);
-                                                });
+                                                			});
+													        //console.log(imgUrlArr[0]);
+													      
+													      });
+													      
+
+
+
+
+
+
+
+
+                                                      
+                                                        //var specImage = list2[1][0].attribs.src;
+
+
                                                 
 
 
