@@ -1,9 +1,12 @@
 const Discord = require('discord.js');
 const { prefix, token } = require('./config.json');
+const { wclToken } = require('./wclToken.json');
 const client = new Discord.Client();
 var request = require('request');
 var cheerio = require('cheerio');
-const puppeteer = require('puppeteer');
+var jsdom = require('jsdom');
+ const puppeteer = require('puppeteer');
+const { JSDOM } = jsdom;
 var statePops = require('./statePops.json');
 client.once('ready', () => {
         console.log('Ready!');
@@ -71,9 +74,39 @@ client.on('message', message => {
 
 
                                         else{   
-                                                var url = 'https://classic.warcraftlogs.com/character/us/skeram/' + args[0];
-                                                request(url, function(err, resp, body){
 
+                                        
+
+
+
+                                                var url = 'https://classic.warcraftlogs.com/character/us/skeram/' + args[0];
+
+                                                                                                var url2 = 'https://classic.warcraftlogs.com/v1/rankings/character/' + args[0] + '/skeram/us?api_key=' + wclToken ;
+                                                var rankings = []
+                                                var ranking = {}
+                                                        request(url2, function (error, response, body) {
+                                                                                if (!error && response.statusCode == 200) {
+                                                                                                var bwlJson = JSON.parse(body);
+
+                                                                                for (var i=0;i<bwlJson.length;i++) {
+                                                                                        ranking = {encounterName: bwlJson[i].encounterName, rank: bwlJson[i].rank, outOf: bwlJson[i].outOf, percentile: bwlJson[i].percentile }                                                 
+                                                                                        rankings.push(ranking)
+                                                                                }
+
+                                                                var url3 = 'https://classic.warcraftlogs.com/v1/rankings/character/' + 'tsar' + '/skeram/us?zone=1000&api_key=' + wclToken;
+                                                                request(url3, function (error, response, body) {
+                                                                                        if (!error && response.statusCode == 200) {
+                                                                                                                                var mcJson = JSON.parse(body);
+
+                                                                                for (var i=0;i<mcJson.length;i++) {
+                                                                                        ranking = {encounterName: mcJson[i].encounterName, rank: mcJson[i].rank, outOf: mcJson[i].outOf, percentile: mcJson[i].percentile }
+                                                                                        rankings.push(ranking)
+                                                                                }
+
+
+
+
+                                                                        request(url, function(err, resp, body){
                                                         $ = cheerio.load(body);
                                                         var list = [];
                                                         $('div[id="character-inset"]').find('div > div > div > div > div > div > span').each(function (index, element) {
@@ -84,68 +117,55 @@ client.on('message', message => {
                                                         var list2 = [];
                                                         var results = [];
                                                         
-                                                     	const img = $('img').attr('src');
-														//console.log(img)	
+                                                        const img = $('img').attr('src');
+                                                                                                                //console.log(img)      
 
-														var req_url = 'https://classic.warcraftlogs.com/character/us/skeram/' + args[0];
-														
-														puppeteer
-													      .launch()
-													      .then(browser => browser.newPage())
-													      .then(page => {
-													        return page.goto(req_url).then(function() {
-													          return page.content();
-													        });
-													      })
-													      .then(html => {
-													        const $ = cheerio.load(html);
-													        const newsHeadlines = [];
-													        const imgUrlArr = [];
-													        $('div[id="top-box"]' ).find('div > div > div').each(function() {
-													          if ($(this).html().includes(".jpg")) {
-													          	  var imgUrl = $(this).html().split("src=")[1]
-													          	  imgUrl = imgUrl.split('"')[1]
-														          imgUrlArr.push(imgUrl);
-													      	  }
-													        });
+                                                                                                                var req_url = 'https://classic.warcraftlogs.com/character/us/skeram/' + args[0];
 
-													        const rankReport = new Discord.MessageEmbed()
+                                                        const rankReport = new Discord.MessageEmbed()
                                                                 .setColor('#4A24D4')
-                                                                .setTitle('Current Player Ranking')
-                                                                .setURL(url)
-                                                                //.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
-                                                                .setDescription(args[0] + ' - Skeram')
-                                                                .setThumbnail('https://dmszsuqyoe6y6.cloudfront.net/img/warcraft/favicon.png')
-                                                                .addFields(
-                                                                        { name: 'BWL Ranking', value: `${bwlRank}`, inline: true},
-                                                                        { name: 'MC Ranking', value: `${mcRank}`, inline: true }
-                                                                )
-                                                                //.addField('Inline field title', 'Some value here', true)
-                                                                .setImage(imgUrlArr[0])
-                                                                .setTimestamp()
-                                                                .setFooter('Data: classic.warcraftlogs.com/');
-                                                                message.channel.send(rankReport);
-                                                			});
-													        //console.log(imgUrlArr[0]);
-													      
-													      });
-													      
+                                                                .setTitle('Current Player Rankings')
+                                                            .setURL(url)
+                                                            //.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+                                                            .setDescription(args[0] + ' - Skeram')
+                                                            .setThumbnail('https://dmszsuqyoe6y6.cloudfront.net/img/warcraft/favicon.png')
+                                                            .addFields(
+                                                                { name: 'BWL Ranking', value: `${bwlRank}`, inline: true},
+                                                                { name: 'MC Ranking', value: `${mcRank}`, inline: true },
+                                                                {name: '\u200b',value: '\u200b',inline: false,},
+                                                                { name: 'Razergore Ranking - Out of - Percentile', value: `${rankings[0].rank} - ${rankings[0].outOf} - ${Math.round(rankings[0].percentile * 100) / 100}`},
+                                                                { name: 'Vaelastrasz Ranking - Out of - Percentile', value: `${rankings[1].rank} - ${rankings[1].outOf} - ${Math.round(rankings[1].percentile * 100) / 100}`},
+                                                                { name: 'Broodlord Ranking - Out of - Percentile', value: `${rankings[2].rank} - ${rankings[2].outOf} - ${Math.round(rankings[2].percentile * 100) / 100}`},
+                                                                { name: 'Firemaw Ranking - Out of - Percentile', value: `${rankings[3].rank} - ${rankings[3].outOf} - ${Math.round(rankings[3].percentile * 100) / 100}`},
+                                                                { name: 'Ebonroc Ranking - Out of - Percentile', value: `${rankings[4].rank} - ${rankings[4].outOf} - ${Math.round(rankings[4].percentile * 100) / 100}`},
+                                                                { name: 'Flamegor Ranking - Out of - Percentile', value: `${rankings[5].rank} - ${rankings[5].outOf} - ${Math.round(rankings[5].percentile * 100) / 100}`},
+                                                                { name: 'Chromaggus Ranking - Out of - Percentile', value: `${rankings[6].rank} - ${rankings[6].outOf} - ${Math.round(rankings[6].percentile * 100) / 100}`},
+                                                                { name: 'Nefarion Ranking - Out of - Percentile', value: `${rankings[7].rank} - ${rankings[7].outOf} - ${Math.round(rankings[7].percentile * 100) / 100}`},
+                                                                {name: '\u200b',value: '\u200b',inline: false,},
+                                                                { name: 'Lucifron Ranking - Out of - Percentile', value: `${rankings[8].rank} - ${rankings[8].outOf} - ${Math.round(rankings[8].percentile * 100) / 100}`},
+                                                                { name: 'Magmadar Ranking - Out of - Percentile', value: `${rankings[9].rank} - ${rankings[9].outOf} - ${Math.round(rankings[9].percentile * 100) / 100}`},
+                                                                { name: 'Gehennas Ranking - Out of - Percentile', value: `${rankings[10].rank} - ${rankings[10].outOf} - ${Math.round(rankings[10].percentile * 100) / 100}`},
+                                                                { name: 'Garr Ranking - Out of - Percentile', value: `${rankings[11].rank} - ${rankings[11].outOf} - ${Math.round(rankings[11].percentile * 100) / 100}`},
+                                                                { name: 'Shazzrah Ranking - Out of - Percentile', value: `${rankings[12].rank} - ${rankings[12].outOf} - ${Math.round(rankings[12].percentile * 100) / 100}`},
+                                                                { name: 'Geddon Ranking - Out of - Percentile', value: `${rankings[13].rank} - ${rankings[13].outOf} - ${Math.round(rankings[13].percentile * 100) / 100}`},
+                                                                { name: 'Sulfuron Ranking - Out of - Percentile', value: `${rankings[14].rank} - ${rankings[14].outOf} - ${Math.round(rankings[14].percentile * 100) / 100}`},
+                                                                { name: 'Golemagg Ranking - Out of - Percentile', value: `${rankings[15].rank} - ${rankings[15].outOf} - ${Math.round(rankings[15].percentile * 100) / 100}`},
+                                                                { name: 'Majordomo Ranking - Out of - Percentile', value: `${rankings[16].rank} - ${rankings[16].outOf} - ${Math.round(rankings[16].percentile * 100) / 100}`},
+                                                                { name: 'Ragnaros Ranking - Out of - Percentile', value: `${rankings[17].rank} - ${rankings[17].outOf} - ${Math.round(rankings[17].percentile * 100) / 100}`}    
+                                                                    )
+                                                                    .setTimestamp()
+                                                                    .setFooter('Data: classic.warcraftlogs.com/');
+                                                                    message.channel.send(rankReport);
+                                                                                                                });             
+                                                                                        }
+
+                                                                                });//confusion land
 
 
+                                                                         }
+                                                                   });
 
-
-
-
-
-
-                                                      
-                                                        //var specImage = list2[1][0].attribs.src;
-
-
-                                                
-
-
-                                                }
+                                        }
                                 }
 
 
