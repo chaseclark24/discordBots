@@ -4,9 +4,6 @@ const { wclToken } = require('./wclToken.json');
 const client = new Discord.Client();
 var request = require('request');
 var cheerio = require('cheerio');
-var jsdom = require('jsdom');
- const puppeteer = require('puppeteer');
-const { JSDOM } = jsdom;
 var statePops = require('./statePops.json');
 client.once('ready', () => {
         console.log('Ready!');
