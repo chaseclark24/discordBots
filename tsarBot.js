@@ -51,7 +51,7 @@ client.on('message', message => {
                                     .setTitle('Current Player Ranking')
                                     .setURL(url)
                                     //.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
-                                    .setDescription(args[0] + ' - ' + args[1])
+                                    .setDescription(args[0] + ' - Skeram')
                                     .setThumbnail('https://dmszsuqyoe6y6.cloudfront.net/img/warcraft/favicon.png')
                                     .addFields(
                                         { name: 'BWL Ranking', value: `${bwlRank}`, inline: true},
@@ -74,6 +74,7 @@ client.on('message', message => {
                             request(url, function(err, resp, body){
 
                                 $ = cheerio.load(body);
+                                console.log(body.length)
                                                                 var list = [];
                                 $('div[id="character-inset"]').find('div > div > div > div > div > div > span').each(function (index, element) {
                                         list.push($(element).html())
@@ -85,8 +86,9 @@ client.on('message', message => {
                                 var rankings = []
                                 var ranking = {}
                                 request(url2, function (error, response, body) {
-                                                                if (!error && response.statusCode == 200) {
-                                                                    var bwlJson = JSON.parse(body);
+                                        var bwlJson = JSON.parse(body);
+                                                                if (typeof bwlJson[0] != 'undefined') {/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                                                    
                                                                     
 
                                     for (var i=0;i<bwlJson.length;i++) {
@@ -120,6 +122,12 @@ client.on('message', message => {
                                             message.channel.send(rankReport);
 
                                          }
+
+
+                                        else{
+                                                message.channel.send("Complete rank record unavailable.");
+
+                                        }
                                      }); //end req2       
 
                                 });//req 1
@@ -145,8 +153,9 @@ client.on('message', message => {
                                 var rankings = []
                                 var ranking = {}
                                 request(url2, function (error, response, body) {
-                                                                if (!error && response.statusCode == 200) {
-                                                                    var mcJson = JSON.parse(body);
+                                        var mcJson = JSON.parse(body);
+                                                                if (typeof mcJson[0] != 'undefined') {
+                                                                    
                                                                     
 
                                     for (var i=0;i<mcJson.length;i++) {
@@ -179,6 +188,10 @@ client.on('message', message => {
                                             message.channel.send(rankReport);
 
                                          }
+                                         else{
+                                                message.channel.send("Complete rank record unavailable.");
+
+                                        }
                                      }); //end req2       
 
                                 });//req 1
