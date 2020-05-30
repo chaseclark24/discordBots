@@ -15,6 +15,10 @@ client.on('message', message => {
         var args = message.content.slice(prefix.length).split(/ +/);
         const command = args.shift().toLowerCase();
 
+
+
+        
+
         if (command === 'roll') {
                 max = Math.floor(parseInt(args[0]));
                 min = Math.ceil(1);
@@ -209,6 +213,8 @@ client.on('message', message => {
                                 "\nReports the next reset time for onyxia. "+
                                 "\n!zg "+
                                 "\nReports the next reset time for Zul Gurub. "+
+                                "\n!dmf "+
+                                "\nReports the next reset time for Dark Moon Faire. "+
                                 "\n!roll [x] "+
                                 "\nGenerates a random number between 1 and x. "+
                                 "\n!cv [state] "+
@@ -305,14 +311,21 @@ client.on('message', message => {
 
                     // Get the first Monday and satuday in the month
                     while (d.getDay() !== 1) {
-                        d.setDate(d.getDate() + 1);
-                        sat.setDate(d.getDate()+6);
+                        while (d.getDate() > 3) {
+                                //exclude mondays that are before the first 3 days of the month
+                                }
+                                d.setDate(d.getDate() + 1);
+                            sat.setDate(d.getDate()+6);
                     }
                     openEndDates.push(new Date(d.getTime()));
                     openEndDates.push(new Date(sat.getTime()));
 
                     // Get first monday and saturday of next month
                     while (d.getMonth() === month ) {
+                            d.setDate(d.getDate() + 7);
+                    }
+
+                    while (d.getDate() < 3) {//exclude mondays that are before the first 3 days of the month
                         d.setDate(d.getDate() + 7);
                     }
                     openEndDates.push(new Date(d.getTime()));//push monday
@@ -436,5 +449,16 @@ client.on('message', message => {
 
 
 });
+
+
+
+
+
+
+
+
+
+
+
 
 client.login(token);
