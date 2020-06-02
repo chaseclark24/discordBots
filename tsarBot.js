@@ -308,14 +308,16 @@ client.on('message', message => {
                         sat = new Date();
                         sun = new Date();
                     d.setDate(1);
-
+                    console.log(d.getDay())
                     // Get the first Monday and satuday in the month
+                    while(d.getDay() < 3 ) {
+                    	d.setDate(d.getDate() + 1);
+						}
                     while (d.getDay() !== 1) {
-                        while (d.getDate() > 3) {
-                                //exclude mondays that are before the first 3 days of the month
-                                }
-                                d.setDate(d.getDate() + 1);
-                            sat.setDate(d.getDate()+6);
+                    	console.log(d.getDate());
+                    	console.log("hello");
+                        d.setDate(d.getDate() + 1);
+                        sat.setDate(d.getDate()+6);
                     }
                     openEndDates.push(new Date(d.getTime()));
                     openEndDates.push(new Date(sat.getTime()));
