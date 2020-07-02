@@ -142,31 +142,31 @@ client.on('message', message => {
 
                                         else if (args[1].toUpperCase() === "MC") {
 
-                            var url = 'https://classic.warcraftlogs.com/character/us/skeram/' + args[0];
-                            request(url, function(err, resp, body){
+                                            var url = 'https://classic.warcraftlogs.com/character/us/skeram/' + args[0];
+                                            request(url, function(err, resp, body){
 
-                                $ = cheerio.load(body);
-                                                                var list = [];
-                                $('div[id="character-inset"]').find('div > div > div > div > div > div > span').each(function (index, element) {
-                                        list.push($(element).html())
-                                });
+                                                $ = cheerio.load(body);
+                                                                                var list = [];
+                                                $('div[id="character-inset"]').find('div > div > div > div > div > div > span').each(function (index, element) {
+                                                        list.push($(element).html())
+                                                });
 
-                                var bwlRank = list[1]
-                                var mcRank = list[3]
-                                var url2 = 'https://classic.warcraftlogs.com/v1/rankings/character/' + args[0] + '/skeram/us?zone=1000&api_key=' + wclToken ;
-                                var rankings = []
-                                var ranking = {}
-                                request(url2, function (error, response, body) {
-                                        var mcJson = JSON.parse(body);
-                                                                if (typeof mcJson[0] != 'undefined') {
-                                                                    
-                                                                    
+                                                var bwlRank = list[1]
+                                                var mcRank = list[3]
+                                                var url2 = 'https://classic.warcraftlogs.com/v1/rankings/character/' + args[0] + '/skeram/us?zone=1000&api_key=' + wclToken ;
+                                                var rankings = []
+                                                var ranking = {}
+                                                request(url2, function (error, response, body) {
+                                                        var mcJson = JSON.parse(body);
+                                                                                if (typeof mcJson[0] != 'undefined') {
+                                                                                    
+                                                                                    
 
-                                    for (var i=0;i<mcJson.length;i++) {
-                                        ranking = {encounterName: mcJson[i].encounterName, rank: mcJson[i].rank, outOf: mcJson[i].outOf, percentile: mcJson[i].percentile }
-                                        rankings.push(ranking)
-                                    }
-                                    var fields = []
+                                                    for (var i=0;i<mcJson.length;i++) {
+                                                        ranking = {encounterName: mcJson[i].encounterName, rank: mcJson[i].rank, outOf: mcJson[i].outOf, percentile: mcJson[i].percentile }
+                                                        rankings.push(ranking)
+                                                    }
+                                                    var fields = []
                                                                         var field = {}
                                     //bwlRankField = { name: 'BWL Ranking', value: `${bwlRank}`, inline: true}
                                                                         mcRankField = { name: 'MC Ranking', value: `${mcRank}`, inline: true }
@@ -301,45 +301,28 @@ client.on('message', message => {
 
 
         if (command === 'dmf') {
-                var d = new Date(),
-                        month = d.getMonth(),
-                        openEndDates = [];
-                        saturdays = [];
-                        sat = new Date();
-                        sun = new Date();
-                    d.setDate(1);
-                    console.log(d.getDay())
-                    // Get the first Monday and satuday in the month
-                    while(d.getDay() < 3 ) {
-                    	d.setDate(d.getDate() + 1);
-						}
-                    while (d.getDay() !== 1) {
-                    	console.log(d.getDate());
-                    	console.log("hello");
-                        d.setDate(d.getDate() + 1);
-                        sat.setDate(d.getDate()+6);
-                    }
-                    openEndDates.push(new Date(d.getTime()));
-                    openEndDates.push(new Date(sat.getTime()));
+                var d = new Date();
+                month = d.getMonth();
+                var dmfTimes = {
+                        0: "01/03-01/06",
+                        1: "02/10-02/16",
+                        2: "03/09-03/15",
+                        3: "04/06-04/12",
+                        4: "05/04-05/10",
+                        5: "06/08-06/14",
+                        6: "07/06-07/12",
+                        7: "08/10-02/16",
+                        8: "09/07-09/13",
+                        9: "10/05-10/11",
+                        10: "11/09-11/15",
+                        11: "12/07-12/13",
+                        
+                };
 
-                    // Get first monday and saturday of next month
-                    while (d.getMonth() === month ) {
-                            d.setDate(d.getDate() + 7);
-                    }
-
-                    while (d.getDate() < 3) {//exclude mondays that are before the first 3 days of the month
-                        d.setDate(d.getDate() + 7);
-                    }
-                    openEndDates.push(new Date(d.getTime()));//push monday
-                    d.setDate(d.getDate() + 6); //generate saturday
-                    openEndDates.push(new Date(d.getTime()));//push saturday
-
-                    //date formatting
-                    const openDate = openEndDates[0].toString().split(" ")[0] + " " + openEndDates[0].toString().split(" ")[1] + " " + openEndDates[0].toString().split(" ")[2]  ;
-                    const nOpenDate= openEndDates[2].toString().split(" ")[0] + " " + openEndDates[2].toString().split(" ")[1] + " " + openEndDates[2].toString().split(" ")[2] ;
-                    const endDate = openEndDates[1].toString().split(" ")[0] + " " + openEndDates[1].toString().split(" ")[1] + " " + openEndDates[1].toString().split(" ")[2] ;
-                    const nEndDate = openEndDates[3].toString().split(" ")[0] + " " + openEndDates[3].toString().split(" ")[1] + " " + openEndDates[3].toString().split(" ")[2] ;
-
+                start1=dmfTimes[month].split("-")[0];
+                end1=dmfTimes[month].split("-")[1];
+                start2=dmfTimes[month+1].split("-")[0];
+                end2=dmfTimes[month+1].split("-")[1];     
                     
 
 
@@ -351,11 +334,11 @@ client.on('message', message => {
                         .setDescription( 'Here is the DMF schedule for this month and next month.')
                         .setThumbnail('https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fvignette1.wikia.nocookie.net%2Fwowwiki%2Fimages%2Ff%2Ff1%2FDarkmoon_faire_banner.png%2Frevision%2Flatest%2Fscale-to-width-down%2F107%3Fcb%3D20140216194729&f=1&nofb=1')
                         .addFields(
-                                { name: 'Open Date This Month', value: `${openDate}`, inline:true},
-                                { name: 'End Date This Month', value: `${endDate}`, inline: true},
+                                { name: 'Open Date This Month', value: `${start1}`, inline:true},
+                                { name: 'End Date This Month', value: `${end1}`, inline: true},
                                 {name: '\u200b',value: '\u200b',inline: false,},
-                                { name: 'Open Date Next Month', value: `${nOpenDate}`, inline:true},
-                                { name: 'End Date Next Month', value: `${nEndDate}` , inline:true}
+                                { name: 'Open Date Next Month', value: `${start2}`, inline:true},
+                                { name: 'End Date Next Month', value: `${end2}` , inline:true}
                         )
 
                         //.setImage('https://i.imgur.com/wSTFkRM.png')
