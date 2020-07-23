@@ -25,6 +25,9 @@ client.once('ready', () => {
         checkTimers();
         }, 5 * 1000); //update every 5 seconds
 
+
+
+
 });
 
 
@@ -38,7 +41,7 @@ client.on('message', message => {
 
 
         if (command === 'wb') {
-                let channel = client.channels.get("717143529150873620"); //set this var to source channel 717143529150873620
+                let channel = client.channels.get("644061609240690699"); //set this var to source channel 717143529150873620//644061609240690699
 
                         channel.fetchMessages({ limit: 1 }).then(messages => { //pull the latest message from source channel
                         let lastMessage = messages.first(); 
@@ -49,7 +52,8 @@ client.on('message', message => {
 
                         message.reply(lastMessage.content)
 
-
+                        var timestamp = new Date();
+                        var timestampDateFormatted = timestamp.toUTCString();
 
 
 
@@ -61,7 +65,7 @@ client.on('message', message => {
                                 console.log('Connected to the bt database.');
                         });
 
-                        db.run(`INSERT INTO buffTimers(buffTimers) VALUES(?)`, [lastMessage.content], function(err) {
+                        db.run(`INSERT INTO wb(time) VALUES(?)`, [timestampDateFormatted], function(err) {
                                 if (err) {
                                         logError(error, "wb - insert")
                                         return console.log(err.message);
@@ -85,22 +89,31 @@ client.on('message', message => {
                 var serverId = message.channel.guild.id;
                 var channelId = message.channel.id;
 
-                message.reply("Buff Timers will be reposted here.")
+                //message.reply("Buff Timers will be reposted here.")
 
                 let channel = client.channels.get(message.channel.id);
 
 
-                channel.fetchMessages({ limit: 5 }).then(messages => { 
+                                //select statement needed here
+                let db4 = new sqlite3.Database('bt.db');
+
+                let sql = `select bufftimers from bufftimers`;
+
+                db4.get(sql, (err, row) => {
+                        if (err) {
+                                return console.error(err.message);
+                        }
+
+                        
+                        message.reply(row.buffTimers)
+                        channel.fetchMessages({ limit: 1 }).then(messages => { 
                         const botMessages = messages.filter(msg => msg.author.bot);
 
 
                         for (let [key, value] of messages) {
 
-                          if (value.author.id = '734570898929090590'){
-
-
-
-                                let db = new sqlite3.Database('bt.db', (err) => {
+                                if (value.author.id = '734570898929090590'){
+                                        let db = new sqlite3.Database('bt.db', (err) => {
                                         if (err) {
                                             logError(error, "repost - db connect")
                                             console.error(err.message);
@@ -115,6 +128,9 @@ client.on('message', message => {
                                         }
                                         // get the last insert id
                                         console.log(`A repost location row has been inserted with rowid ${this.lastID}`);
+                                        console.log("sid: " + serverId );
+                                        console.log("cid: " + channelId );
+                                        console.log("mid: " + key );
                                 });
 
                                 // close the database connection
@@ -126,15 +142,41 @@ client.on('message', message => {
                           
 
                         }
-                        //console.log(botMessages)
-                        //console.log(messages.message)
-
-
 
                 })
 
+                        
+                
+
+                });
+
+                db4.close();
+
+
+
+
+
+
+
 
         }
+
+
+        if (command === 'brb' || command === 'buffreposterbot') {
+                                help = "```!wb " +
+                                "\nReports the latest world buff times. "+
+                                "\n!repost "+
+                                "\nMake a post that will automatically update with the latest buff times. "+
+                                "\nOne !repost is allowed per server. Only the latest !repost will be recognized by the bot. "+
+                                "\n"+
+                                "\nIf you find Buff Reposter Bot useful, consider donating to the developer: https://www.paypal.me/buffreposterbot ```"
+
+                message.channel.send(help);
+
+
+
+        }
+
 
 
 
@@ -148,7 +190,7 @@ var channel2 = ""
 
 function checkTimers(){
 
-        channel3 = client.channels.get("717143529150873620");
+        channel3 = client.channels.get("644061609240690699"); //717143529150873620
         channel3.fetchMessages({ limit: 1 }).then(messages => {
                 var lastMessage3 = messages.first();
 
@@ -166,7 +208,9 @@ function checkTimers(){
                         timers = lastMessage3.content;
                         if (lastMessage3.content === row.buffTimers){
                                 //exit this function
-                                console.log("current buff timers match ✅ not updating messages")
+                                var timestamp = new Date();
+                                var timestampDateFormatted = timestamp.toUTCString();
+                                console.log("current buff timers match ✅ not updating messages - " + timestampDateFormatted)
                                 return;
                         }
                         else{
@@ -180,6 +224,7 @@ function checkTimers(){
                 });
 
                 db4.close();
+                console.log("closing database")
 
 
 
@@ -245,7 +290,7 @@ function updateTimers(timers){
                                         .then(msg => {
                                                 console.log("editting message -" + row.mid)
                                                 const fetchedMsg = msg.first();
-                                                fetchedMsg.edit(lastMessage.content);   //update the message pulled from the database
+                                                fetchedMsg.edit(timers);   //update the message pulled from the database
                                         });
                                 
 
