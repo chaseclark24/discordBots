@@ -13,6 +13,10 @@ process.on('unhandledRejection', (reason, promise) => { //send all unhandled rej
                 cid = reason.path.split('/')[4]
                 removeChannel(cid);
         }
+        else if (reason.message === 'Missing Access'){
+                cid = reason.path.split('/')[4]
+                removeChannel(cid);
+        }
         
 });
 
@@ -168,6 +172,7 @@ client.on('message', message => {
                                 "\n!repost "+
                                 "\nMake a post that will automatically update with the latest buff times. "+
                                 "\nOne !repost is allowed per server. Only the latest !repost will be recognized by the bot. "+
+                                "\n!brb or !buffreposterbot can be used to request this information. "+
                                 "\n"+
                                 "\nIf you find Buff Reposter Bot useful, consider donating to the developer: https://www.paypal.me/buffreposterbot ```"
 
