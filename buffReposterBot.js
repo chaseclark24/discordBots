@@ -11,11 +11,11 @@ process.on('unhandledRejection', (reason, promise) => { //send all unhandled rej
 
         if (reason.message === 'Cannot edit a message authored by another user'){
                 cid = reason.path.split('/')[4]
-                removeChannel(cid);
+                removeChannel(cid, 'Cannot edit a message authored by another user');
         }
         else if (reason.message === 'Missing Access'){
                 cid = reason.path.split('/')[4]
-                removeChannel(cid);
+                removeChannel(cid, 'Missing Access');
         }
         
 });
@@ -27,7 +27,7 @@ client.once('ready', () => {
         console.log('Ready!');
         setInterval(function() {
         checkTimers();
-        }, 5 * 1000); //update every 5 seconds
+        }, 10 * 1000); //update every 5 seconds
 
 
 
@@ -174,7 +174,8 @@ client.on('message', message => {
                                 "\nOne !repost is allowed per server. Only the latest !repost will be recognized by the bot. "+
                                 "\n!brb or !buffreposterbot can be used to request this information. "+
                                 "\n"+
-                                "\nIf you find Buff Reposter Bot useful, consider donating to the developer: https://www.paypal.me/buffreposterbot ```"
+                                "\nIf you find Buff Reposter Bot useful, consider donating to the developer: https://www.paypal.me/buffreposterbot" +
+                                "\nQuestions/Comments: buffreposterbot@gmx.com```"
 
                 message.channel.send(help);
 
@@ -287,14 +288,18 @@ function updateTimers(timers){
                                 channel2 = client.channels.get(row.cid)         //get information about the message to be updated
                                
                                 if(!channel2){ 
-                                        removeChannel(row.cid)
+                                        removeChannel(row.cid, "Channel is undefined");
                                 };
 
-                                console.log("channel ID -" + channel2.id)
+                                console.log("channel ID -" + channel2.id);
                                 channel2.fetchMessages({around: row.mid, limit: 1})
                                         .then(msg => {
                                                 console.log("editting message -" + row.mid)
                                                 const fetchedMsg = msg.first();
+                                                if (!fetchedMsg){
+                                                        removeChannel(row.cid, "message is undefined");
+
+                                                }
                                                 fetchedMsg.edit(timers);   //update the message pulled from the database
                                         });
                                 
@@ -324,7 +329,7 @@ function updateTimers(timers){
 };
 
 
-function removeChannel(cid){
+function removeChannel(cid, error){
         let db = new sqlite3.Database('bt.db', (err) => {
                 if (err) {
                         console.error(err.message);
@@ -345,7 +350,7 @@ function removeChannel(cid){
                 }
         }); 
 
-        logError("channel removal from handled exception","record deleted");  
+        logError(error, "channel removal from handled exception");  
 
 
 };
