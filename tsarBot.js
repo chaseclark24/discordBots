@@ -300,6 +300,50 @@ client.on('message', message => {
         }
 
 
+        if (command === 'aq') {
+                const DAYS = 24 * 3600 * 1000;
+                var resetTime = new Date("Apr 16, 2020 11:00:00 GMT-05:00").getTime()
+                var interval = 3 * DAYS
+                const now = new Date().getTime();
+                while (resetTime < now) resetTime += interval
+                const tSecs = Math.floor((resetTime - now) / 1000);
+                const secs = tSecs % 60;
+                const tMins = (tSecs - secs) / 60;
+                const mins = tMins % 60;
+                const tHours = (tMins - mins) / 60;
+                const hours = tHours % 24;
+                const days = (tHours - hours) / 24;
+                const reset = new Date(resetTime).toString();
+                const resetString = reset.split(" ")[0] + " " + reset.split(" ")[1] + " " + reset.split(" ")[2] ;
+                const nextReset = new Date(resetTime += interval).toString();
+                const nextResetString = nextReset.split(" ")[0] + " " + nextReset.split(" ")[1] + " " + nextReset.split(" ")[2] ;
+                const nextNextReset = new Date(resetTime += interval).toString();
+                const nextNextResetString = nextNextReset.split(" ")[0] + " " + nextNextReset.split(" ")[1] + " " + nextNextReset.split(" ")[2] ;
+
+
+                const zgReport = new Discord.MessageEmbed()
+                .setColor('#ff9966')
+                .setTitle('AQ20 Reset Timer')
+                //.setURL('https://us.forums.blizzard.com/en/wow/t/zulgurub-raid-resets/491994')
+                //.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+                .setDescription( 'Here are the next 3 AQ reset dates. Resets occur at 12PM server time.')
+                .setThumbnail('https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fgamepedia.cursecdn.com%2Fwowpedia%2F0%2F0f%2FHorisath.png%3Fversion%3D00098f101a4174b305224ff985821d31&f=1&nofb=1')
+                .addFields(
+                        { name: 'Time Until Next AQ20 Reset', value: `${days}d ${hours}h ${mins}m ${secs}s`, inline:true},
+                        { name: 'AQ20 Reset Date and Time', value: `${resetString}`, inline: true},
+                        {name: '\u200b',value: '\u200b',inline: false,},
+                        { name: 'Reset Date and Time 2', value: `${nextResetString}`, inline:true},
+                        { name: 'Reset Date and Time 3', value: `${nextNextResetString}` , inline:true}
+                )
+
+                //.setImage('https://i.imgur.com/wSTFkRM.png')
+                .setTimestamp()
+                //.setFooter('Source: us.forums.blizzard.com/en/wow/t/zulgurub-raid-resets/491994');
+                message.channel.send(zgReport);
+
+        }
+
+
         if (command === 'dmf') {
                 var d = new Date();
                 month = d.getMonth();
@@ -311,7 +355,7 @@ client.on('message', message => {
                         4: "05/04-05/10",
                         5: "06/08-06/14",
                         6: "07/06-07/12",
-                        7: "08/10-02/16",
+                        7: "08/10-08/16",
                         8: "09/07-09/13",
                         9: "10/05-10/11",
                         10: "11/09-11/15",
@@ -433,6 +477,122 @@ client.on('message', message => {
 
 
 
+
+
+        
+        if (command === 'poll') {
+                console.log(args[0])
+                args = args.join(" ");
+                args = args.split("|");
+                console.log(args.length)
+                if (args.length === 2 ){
+                        message.reply("You have only specified one choice on your poll. When defining choices you need to select at least two.")
+                        return
+                }
+
+                if (args[2]){
+                        //do multiple options poll
+                        //args = args.join(" ");
+                        console.log(args)
+                        messageFields = []
+                        emojiLookup = ["🟦","🟥",  "🟧", "🟩","🟨","🟪","🟫","🔴","🟠","🟡","🟢","🔵","🟣",
+                                        "🟤","🔶","🔷","♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒"
+                                        ,"♓","⛎","0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟",
+                                        "🔺","🔻","🔸","🔹"]
+
+                                         
+
+
+                        indexCount = 0
+                        
+                        //for each choice you define, create a field item for the embedded message
+                        args.forEach(function (choice, index) {
+                                //console.log(choice, index);
+                                if(index > 0){
+                                        indexCount = indexCount+1
+
+                                        messageObj= {}
+                                        messageObj.name = emojiLookup[index-1]
+                                        messageObj.value = choice 
+                                        messageObj.inline = true
+                                        console.log(messageObj)
+                                        messageFields.push(messageObj)
+                                        //messageFields.push("{ name: '" + index + "', value: '" + choice + "', inline: true },")
+                                }
+                        });
+                        //console.log(messageFields)
+
+                        //generate the embedded message based on the fields we created above
+                        const flashReport = new Discord.MessageEmbed()
+                                .setColor('#66ffff')
+                                .setTitle(args[0])
+                                .addFields(
+                                        messageFields
+                                )
+                        .setTimestamp()
+                        message.channel.send(flashReport)
+
+                        //find the message and add reactions relating to each choice
+                        const filter = m => m.author.id === client.user.id;
+                        const collector = message.channel.createMessageCollector(filter, { time: 2000 });
+                      
+                        collector.on('collect', m => {
+                                //console.log(`Collected ${m.id}`);
+                                //console.log(indexCount)
+                                for (var i = 0; i < indexCount; i++){
+                                        //console.log("inside loop - indexcount " + indexCount + "index =" + i)
+                                        m.react(emojiLookup[i]);  
+
+                                }
+                         });
+
+
+                }
+                else{   
+                        //do yes/no poll
+                        //console.log(args[0])
+                        //generate embedded message
+                        const flashReport = new Discord.MessageEmbed()
+                                .setColor('#66ffff')
+                                .setTitle(args[0])
+
+                                .addFields(
+                                        { name: 'Yes', value: `👍`, inline: true },
+                                        //{ name: '\u200B', value: '\u200B' },
+                                        { name: 'No', value: `👎`, inline: true },
+                                )
+                                .setTimestamp()
+                        message.channel.send(flashReport)
+
+                        //find the message and add reactions
+                        const filter = m => m.author.id === client.user.id;
+                        const collector = message.channel.createMessageCollector(filter, { time: 2000 });
+                      
+                        collector.on('collect', m => {
+                                //console.log(`Collected ${m.id}`);
+                                m.react('👍');
+                                m.react('👎');
+                         });
+
+
+                }
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 });
 
 
@@ -447,3 +607,4 @@ client.on('message', message => {
 
 
 client.login(token);
+
