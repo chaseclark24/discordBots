@@ -1,13 +1,79 @@
 const Discord = require('discord.js');
 const { prefix, token } = require('./config.json');
 const { wclToken } = require('./wclToken.json');
-const client = new Discord.Client();
+const { Client } = require('discord.js');
+const client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
 var request = require('request');
 var cheerio = require('cheerio');
 var statePops = require('./statePops.json');
 client.once('ready', () => {
         console.log('Ready!');
 });
+
+
+
+//singe choice polls
+client.on('messageReactionAdd', async (reaction, user) => {
+
+    currentReaction = reaction.emoji.name;
+    currentReactor = user.id;
+
+    
+    if (reaction.partial) {
+        // If the message this reaction belongs to was removed the fetching might result in an API error, which we need to handle
+        try {
+            await reaction.fetch();
+        } catch (error) {
+            console.log('Something went wrong when fetching the message: ', error);
+            // Return as `reaction.message.author` may be undefined/null
+            return;
+        }
+    }
+
+    //only review single choice poll reactions
+    if (client.user.id === reaction.message.author.id && reaction.message.embeds[0].description === 'single choice poll'){
+
+        channel = client.channels.cache.get(reaction.message.channel.id);
+
+        channel.messages.fetch(reaction.message.id).then(messages => {
+           
+            fullReactorsList = []
+
+            //two for loops to look through keys and values of previous reactions, ugly code
+            for (let entry of messages.reactions.cache) { 
+             
+                 for (let key of entry[1].users.cache.keys()){
+                    reaction = {}
+                    emoji = entry[0]
+                    reaction = {emoji : entry[0], reactor: key}
+                    fullReactorsList.push(reaction)    //push the emoji and reactor of previous reactions for this post
+
+                 }
+
+
+            }
+
+            fullReactorsList.forEach(function (item, index) {
+              //if current reactor already exist in the list of reactors
+              //AND the current reactor is not the bot
+              //AND the current reaction does not equal the emoji found in previous reactions list
+              //remove previous reaction  
+                if (item.reactor === currentReactor && currentReactor != client.user.id && currentReaction != item.emoji){
+                    messages.reactions.resolve(item.emoji).users.remove(currentReactor);
+                }
+            });
+        
+
+        });
+
+        
+
+    }
+
+});
+
+
+
 
 client.on('message', message => {
         if (!message.content.startsWith(prefix) || message.author.bot) return;
@@ -109,6 +175,10 @@ client.on('message', message => {
                                 "\nGenerates a random number between 1 and x. "+
                                 "\n!cv [state] "+
                                 "\nCV will generate a COVID 19 status update. State is an optional argument. If no state is provided, worldwide counts will be provided. "+
+                                "\n!poll [question] | [option 1] | [option 2] | etc..."+
+                                "\nGenerates a poll. Options are optional. If no options are specified, the poll will be yes/no. You can add as many options as you like."+
+                                "\n!pollmc [question] | [option 1] | [option 2] | etc... "+
+                                "\nGenerates a poll, similar to above, with the only difference that people can vote on multiple options. "+
                                 "\n!rank [player] [server]"+
                                 "\nGenerates current warcraft logs ranking for the provided player. Server is optional. If no server is provided the default is skeram. ```"
 
@@ -370,16 +440,15 @@ client.on('message', message => {
 
 
         
-        if (command === 'poll') {
-                console.log(args[0])
+        if (command === 'poll' || command === 'pollmc') {
+                //console.log(args[0])
                 args = args.join(" ");
                 args = args.split("|");
-                console.log(args.length)
+                //console.log(args.length)
                 if (args.length === 2 ){
                         message.reply("You have only specified one choice on your poll. When defining choices you need to select at least two.")
                         return
                 }
-
                 if (args[2]){
                         //do multiple options poll
                         //args = args.join(" ");
@@ -413,14 +482,28 @@ client.on('message', message => {
                         //console.log(messageFields)
 
                         //generate the embedded message based on the fields we created above
-                        const flashReport = new Discord.MessageEmbed()
-                                .setColor('#66ffff')
-                                .setTitle(args[0])
-                                .addFields(
-                                        messageFields
-                                )
-                        .setTimestamp()
-                        message.channel.send(flashReport)
+                        if ( command === 'pollmc'){
+                            console.log("polmc")
+                            const flashReport = new Discord.MessageEmbed()
+                                    .setColor('#66ffff')
+                                    .setTitle(args[0])
+                                    .addFields(
+                                            messageFields
+                                    )
+                            .setTimestamp()
+                            message.channel.send(flashReport)
+                        } else{ //single choice poll
+                            const flashReport = new Discord.MessageEmbed()
+                                    .setColor('#66ffff')
+                                    .setDescription('single choice poll')
+                                    .setTitle(args[0])
+                                    .addFields(
+                                            messageFields
+                                    )
+                            .setTimestamp()
+                            message.channel.send(flashReport)
+
+                        }
 
                         //find the message and add reactions relating to each choice
                         const filter = m => m.author.id === client.user.id;
@@ -442,17 +525,30 @@ client.on('message', message => {
                         //do yes/no poll
                         //console.log(args[0])
                         //generate embedded message
-                        const flashReport = new Discord.MessageEmbed()
-                                .setColor('#66ffff')
-                                .setTitle(args[0])
-
-                                .addFields(
-                                        { name: 'Yes', value: `👍`, inline: true },
-                                        //{ name: '\u200B', value: '\u200B' },
-                                        { name: 'No', value: `👎`, inline: true },
-                                )
-                                .setTimestamp()
-                        message.channel.send(flashReport)
+                        if ( command === 'pollmc'){
+                            const flashReport = new Discord.MessageEmbed()
+                                    .setColor('#66ffff')
+                                    .setTitle(args[0])
+                                    .addFields(
+                                            { name: 'Yes', value: `👍`, inline: true },
+                                            //{ name: '\u200B', value: '\u200B' },
+                                            { name: 'No', value: `👎`, inline: true },
+                                    )
+                                    .setTimestamp()
+                            message.channel.send(flashReport)
+                        } else{ //single choice poll
+                            const flashReport = new Discord.MessageEmbed()
+                                    .setColor('#66ffff')
+                                    .setTitle(args[0])
+                                    .setDescription('single choice poll')
+                                    .addFields(
+                                            { name: 'Yes', value: `👍`, inline: true },
+                                            //{ name: '\u200B', value: '\u200B' },
+                                            { name: 'No', value: `👎`, inline: true },
+                                    )
+                                    .setTimestamp()
+                            message.channel.send(flashReport)
+                        }
 
                         //find the message and add reactions
                         const filter = m => m.author.id === client.user.id;
@@ -472,24 +568,7 @@ client.on('message', message => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 });
-
-
-
-
-
-
 
 
 
