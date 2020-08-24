@@ -70,8 +70,52 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
     }
 
+
+
+    //pug reaction role add logic
+
+    if(reaction.emoji.id == "747539509628895342" && reaction.message.id === "747539509628895342") 
+        {
+
+                console.log(reaction.message.guild.member(user))
+                let i = reaction.message.guild.roles.cache.find(e => e.name == "PUG");
+                reaction.message.guild.member(user).roles.add(i).catch(console.error)
+        }
+
 });
 
+
+//pug reaction role removal logic
+
+client.on('messageReactionRemove', async (reaction, user) => {
+
+    currentReaction = reaction.emoji.name;
+    currentReactor = user.id;
+    console.log(reaction.emoji.id)
+
+    
+    if (reaction.partial) {
+        // If the message this reaction belongs to was removed the fetching might result in an API error, which we need to handle
+        try {
+            await reaction.fetch();
+        } catch (error) {
+            console.log('Something went wrong when fetching the message: ', error);
+            // Return as `reaction.message.author` may be undefined/null
+            return;
+        }
+    }
+
+
+ if(reaction.emoji.id == "747539509628895342" && reaction.message.id === "747539509628895342") 
+        {
+
+                console.log(reaction.message.guild.member(user))
+                let i = reaction.message.guild.roles.cache.find(e => e.name == "PUG");
+                reaction.message.guild.member(user).roles.remove(i).catch(console.error)
+        }
+
+
+});
 
 
 
@@ -568,7 +612,24 @@ client.on('message', message => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 });
+
+
+
+
+
+
 
 
 
