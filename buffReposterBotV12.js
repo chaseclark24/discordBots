@@ -48,7 +48,7 @@ process.on('unhandledRejection', (reason, promise) => {
     }
     else if (reason.message === "Cannot read property 'fetchMessages' of undefined"
         || reason.message === "Cannot read property 'edit' of undefined"
-        || reason.essage === "Cannot read property 'messages' of undefined"
+        || reason.message === "Cannot read property 'messages' of undefined"
         || reason.errno === 'EAI_AGAIN'
         || reason.code === 'ECONNRESET'
         || reason.code === 500
@@ -188,6 +188,29 @@ client.on('message', message => {
             }
         });
         db.close();
+    }
+    else if (command === 'unsuball') {
+        const db = getDatabase();
+        db.run(`DELETE FROM notifications WHERE user=? and type=?`, [message.author.id, "sub"], function (err) {
+                if (err) {
+                        return console.error(err.message);
+                }
+                onsole.log(`UNSUB: Row(s) deleted ${this.changes}`);
+                message.reply(`Subs cleared: ${this.changes}`)
+        });
+
+            // close the database connection
+        insertNotificationLog(message.author.id, "all", "all", "removal-unsuball")
+        db.close();
+    }
+    else if (command === 'suball') {
+        vals =[]
+        Object.values(SYMBOL_MAP).forEach(val => {
+                insertNotification(message.author.id, val,"sub")
+                vals.push(val)
+        })
+        message.reply(`Subbed to: ` + vals)
+        ;
     }
     else if (command === 'repost') {
         //pull server ID and channel ID from message details
@@ -362,14 +385,8 @@ function createTimersMap(timerString) {
         if (SYMBOL_MAP.hasOwnProperty(firstWord)) {
             timerMap[SYMBOL_MAP[firstWord]] = item
         } else if (firstWord === "Updated" || firstWord === "**Updated" ) {
-            //console.log("on Updated as of-----------")
             timerMap["Updated"] = item;
-            //console.log(timerMap)
-        } //else if (firstWord === "🐛") {
-            //console.log("skipping bug emoji")
-       // } else {
-            //console.log(`missing symbol ${firstWord}`);
-        //}
+        } 
     });
     return timerMap;
 }
@@ -490,33 +507,36 @@ function updateTimers(timers) {
         channel.messages.fetch({
             limit: 1
         }).then(messages => {
-            let lastMessage = messages.first(); //get the latest message from the channel to use as a source of information
+                let lastMessage = messages.first(); //get the latest message from the channel to use as a source of information
 
-            rows.forEach((row, index) => { //iterate over all of the post locations
-                let channel2 = client.channels.cache.get(row.cid); //get information about the message to be updated
+                let promises = rows.map((row, index) => { // iterate over all of the post locations
+                let channel2 = client.channels.cache.get(row.cid); // get information about the message to be updated
 
                 if (!channel2) {
                     removeChannel(row.cid, "Channel is undefined");
                 }
-                channel2.messages
-                .fetch({
-                    around: row.mid,
-                    limit: 1
-                })
-                .then(msg => {
-                    console.log("editting message - 🔄 -" + row.mid + " - " + index);
-                    const fetchedMsg = msg.first();
-                    if (!fetchedMsg) {
-                        removeChannel(row.cid, "message is undefined");
-                    }
-                    fetchedMsg.edit(timers); //update the message pulled from the database
-
-                    // if this is the last row then wait 20 seconds and call checkTimers
-                    if (rows.length === index + 1) {
-                        setTimeout(checkTimers, 20000);
-                    }
-                });
+                return channel2.messages
+                    .fetch({
+                        around: row.mid,
+                        limit: 1
+                    })
+                    .then(msg => {
+                        console.log("editting message - 🔄 -" + row.mid + " - " + index);
+                        const fetchedMsg = msg.first();
+                        if (!fetchedMsg) {
+                            removeChannel(row.cid, "message is undefined");
+                        }
+                        fetchedMsg.edit(timers); //update the message pulled from the database
+                    })
             });
+
+            Promise.all(promises).then(() => {
+                console.log("calling check timers in 20 sec")
+                setTimeout(checkTimers, 20000);
+            });
+
+
+
         });
     });
 
