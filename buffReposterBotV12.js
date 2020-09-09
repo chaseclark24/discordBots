@@ -1,12 +1,12 @@
 const Discord = require('discord.js');
 const {
     prefix,
-    token
+    token,
+    sourceChannel
 } = require('./config.json');
 const client = new Discord.Client();
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
-const sourceChannel="749435709097639946"; //cisum buff channel
 const SYMBOL_MAP = {
     "👹": "rend",
     "🐉": "ony",
@@ -14,7 +14,8 @@ const SYMBOL_MAP = {
     "💗": "hakkar",
     "🥀": "bvsf",
     "👑": "dmt",
-    "⚠️": "griefer"
+    "⚠️": "griefer",
+    "🎪": "dmf"
 };
 const TIMER_NAMES = new Set(Object.values(SYMBOL_MAP));
 const DATABASE_FILE_NAME = "bt.db";
@@ -81,16 +82,11 @@ client.on('message', message => {
     const args = message.content.slice(prefix.length).split(/ +/);
     const command = args.shift().toLowerCase();
     if (command === 'wb') {
-        console.log("inside wb")
         const channel = client.channels.cache.get(sourceChannel); //set this var to source channel 
         channel.messages.fetch({
             limit: 1
         }).then(messages => { //pull the latest message from source channel
-            const lastMessage = messages.first();
-            console.log(lastMessage)
-            //ignore messages from bots
-
-            if (lastMessage.author.bot) {///////////////////needs to be changed back to !lastMessage.author.bot
+                const lastMessage = messages.first();
                 message.reply(lastMessage.content);
                 const timestampDateFormatted = new Date().toUTCString();
                 const db = getDatabase();
@@ -101,12 +97,12 @@ client.on('message', message => {
                         return console.log(err.message);
                     }
                     // get the last insert id
-                    console.log(`A wb request row has been inserted with rowid ${this.lastID}`);
+                    console.log(`A wb request row has been inserted 🗺️ with rowid: ${this.lastID} - userID: ${message.author.id} - user: ${message.author.username}`);
                 });
 
                 // close the database connection
                 db.close();
-            }
+
         })
     }
     else if (command === 'subs' ) {
@@ -131,7 +127,7 @@ client.on('message', message => {
         });
 
         //insertNotification(message.author.id,"","subs")
-        insertNotificationLog(message.author.id, "", "", "subs");
+        insertNotificationLog(message.author.id, "", "", "subs", message.author.username);
         //insertNotificationLog(user, command, type, "insert")
 
         db.close();
@@ -174,7 +170,7 @@ client.on('message', message => {
             if (!row) {
                 // if there is no previous notification sub for this user+location then insert it
                 insertNotification(message.author.id, commandLocation,"sub");
-                message.reply(`You will receive a message with every update to ${commandLocation}. To unsubscribe from further updates, retype !${commandLocation}`);
+                message.reply(`You will receive a message with every update to ${commandLocation}. To unsubscribe from further updates, retype !${command}`);
             } else if (row.type === 'sub') {
                 // if there is a previous notification sub for this location+user, unsub the user
                 notificationRemoval(commandLocation, message.author.id, row.type);
@@ -183,7 +179,7 @@ client.on('message', message => {
                 //if there is a single notification already for this location+user, overwrite with sub.
                 notificationRemoval(commandLocation, message.author.id, row.type);
                 message.reply(`You have a one-time request for updates on !${commandLocation} that was overwritten by this subscription. \n` +
-                    `You will receive a message with every update to ${commandLocation}. To unsubscribe from further updates, retype !${commandLocation}`);
+                    `You will receive a message with every update to ${commandLocation}. To unsubscribe from further updates, retype !${command}`);
                 insertNotification(message.author.id, commandLocation, "sub")
             }
         });
@@ -195,12 +191,12 @@ client.on('message', message => {
                 if (err) {
                         return console.error(err.message);
                 }
-                onsole.log(`UNSUB: Row(s) deleted ${this.changes}`);
+                console.log(`UNSUB: Row(s) deleted ${this.changes}`);
                 message.reply(`Subs cleared: ${this.changes}`)
         });
 
             // close the database connection
-        insertNotificationLog(message.author.id, "all", "all", "removal-unsuball")
+        insertNotificationLog(message.author.id, "all", "all", "removal-unsuball", message.author.username)
         db.close();
     }
     else if (command === 'suball') {
@@ -217,12 +213,14 @@ client.on('message', message => {
         //console.log(message.channel.guild)
         if (message.channel.guild == null){
                 message.reply('Currently reposting to DMs is not supported.')
+                console.log('repost to DM request from ' + message.author.username + ' has been ignored')
                 logError('repost', "repost requested to DM");
                 return
         }
         const serverId = message.channel.guild.id;
+        //console.log(message.channel.guild.name)
         const channelId = message.channel.id;
-
+        const userName = message.author.username
 
         //pull the latest timers and reply to the !repost
         let db = getDatabase();
@@ -236,27 +234,22 @@ client.on('message', message => {
         db.close();
 
         //pull the latest message from the bot and add it to the repost database
-        if (client.user.lastMessage == null) {
-            const collector = new Discord.MessageCollector(message.channel, m => m.author.id === client.user.id, { time: 10000 });
-            collector.on('collect', message => {
+        const collector = new Discord.MessageCollector(message.channel, m => m.author.id === client.user.id, { time: 10000 });
+        collector.on('collect', message => {
                 collector.stop("Got my message");
                 let db = getDatabase();
                 db.run(`INSERT OR REPLACE INTO repostLocations VALUES(?, ?, ?)`, [serverId, channelId, message.id], function (err) {
-                    if (err) {
-                        logError(err.message, "repost - insert statement");
-                        return console.log(err.message);
-                    }
-                    // get the last insert id
-                    console.log(`A repost location row has been inserted with rowid ${this.lastID}`);
-                    console.log("sid: " + serverId);
-                    console.log("cid: " + channelId);
-                    console.log("mid: " + message.id);
+                        if (err) {
+                                logError(err.message, "repost - insert statement");
+                                return console.log(err.message);
+                        }
+                        // get the last insert id
+                        console.log(`A repost location row has been inserted 🆒 with rowid ${this.lastID} - server: ${serverId} - ${message.channel.guild.name} - user: ${userName}`);
                 });
-
                 // close the database connection
                 db.close();
-            })
-        }
+        })
+
     }
     else if (command === 'brb' || command === 'buffreposterbot') {
         const help = "```!wb " +
@@ -266,14 +259,20 @@ client.on('message', message => {
             "\nMake a post that will automatically update with the latest buff times. " +
             "\nOne !repost is allowed per server. Only the latest !repost will be recognized by the bot. " +
             "\n" +
-            "\n!ony !nef !rend !bvsf !hakkar !dmt"+
+            "\n!ony !nef !rend !bvsf !hakkar !dmt !dmf !griefer"+
             "\nRequest a one time notification for updates." +
             "\nFor example, to get a one time update for ony buff, message !ony" +
             "\n" +
-            "\n!onysub !nefsub !rendsub !bvsfsub !hakkarsub !dmtsub"+
+            "\n!onysub !nefsub !rendsub !bvsfsub !hakkarsub !dmtsub !dmfsub !griefersub"+
             "\nRequest notifications for every update until unsubscribed." +
             "\nFor example, to get every update for ony buff, message !onysub" +
             "\nTo unsubscribe, simply message the original command again, in this example !onysub" +
+            "\n" +
+            "\n!suball" +
+            "\nSubscribe to all available subscriptions." +
+            "\n" +
+            "\n!unsuball" +
+            "\nClear all active subscriptions." +
             "\n" +
             "\n!subs" +
             "\nCheck on currently active subscriptions." +
@@ -302,17 +301,18 @@ function insertNotification(user, command, type){
             return console.log(err.message);
         }
         // get the last insert id
-        console.log(`A notification row has been inserted with rowid ${this.lastID}`);
-        console.log("user: " + user + " notification: " + command);
+        //console.log(`A notification row has been inserted with rowid ${this.lastID}`);
+        //console.log("user: " + user + " notification: " + command);
         //console.log();
     });
 
     // close the database connection
     db.close();
-    insertNotificationLog(user, command, type, "insert")
+    const userInfo = client.users.cache.get(user);
+    insertNotificationLog(user, command, type, "insert", userInfo.username)
 }
 
-function insertNotificationLog(user, location, type, status) {
+function insertNotificationLog(user, location, type, status, userName) {
     const timestampDateFormatted = new Date().toUTCString();
     const db = getDatabase();
 
@@ -322,9 +322,7 @@ function insertNotificationLog(user, location, type, status) {
             return console.log(err.message);
         }
         // get the last insert id
-        console.log(`A notificationLog row has been inserted 📢 with rowid ${this.lastID}`);
-        //console.log("user: " + user + " notification: " + command);
-        //console.log();
+        console.log(`A notificationLog row has been inserted 📢 with rowid ${this.lastID} - ${location} - ${type} - ${status} - ${user} - ${userName}`);
     });
 
     // close the database connection
@@ -437,6 +435,7 @@ function sendNotifications(newUpdated, oldTimer, newTimer, locations, locationNa
     locations.forEach(locationObj => {
         if (locationObj.location === locationName) {
             const user = client.users.cache.get(locationObj.user);
+            //console.log(user)
             let flashReport = new Discord.MessageEmbed()
                 .setColor('#66ffff')
                 .setTitle("Buff Timer Update")
@@ -450,13 +449,13 @@ function sendNotifications(newUpdated, oldTimer, newTimer, locations, locationNa
             if (locationObj.type === 'single') {
                 //user.send(newUpdated + " Old Timer: " + oldRend + " -- > New Timer: " + newRend);
                 user.send(flashReport);
-                insertNotificationLog(locationObj.user, locationName, locationObj.type, "sent notification")
+                insertNotificationLog(locationObj.user, locationName, locationObj.type, "sent notification",user.username)
                 notificationRemoval(locationObj.location, locationObj.user, locationObj.type)
             } else if (locationObj.type === 'sub') {
                 //user.send(newUpdated + " Old Timer: " + oldRend + " -- > New Timer: " + newRend);
                 flashReport = flashReport.setFooter(`To unsubscribe from this message type !${locationName}sub`);
                 user.send(flashReport);
-                insertNotificationLog(locationObj.user, locationName, locationObj.type, "sent notification")
+                insertNotificationLog(locationObj.user, locationName, locationObj.type, "sent notification",user.username)
             }
         }
     });
@@ -466,7 +465,7 @@ function sendNotifications(newUpdated, oldTimer, newTimer, locations, locationNa
 
 function notificationRemoval(location, user, type) {
     let db = getDatabase();
-
+    const userInfo = client.users.cache.get(user);
     db.run(`DELETE FROM notifications WHERE user=? and location=? and type=?`, [user, location, type], function (err) {
         if (err) {
             return console.error(err.message);
@@ -480,7 +479,7 @@ function notificationRemoval(location, user, type) {
             return console.error(err.message);
         }
     });
-    insertNotificationLog(user, location, type, "removal")
+    insertNotificationLog(user, location, type, "removal", userInfo.username)
 }
 
 function updateTimers(timers) {
@@ -511,7 +510,6 @@ function updateTimers(timers) {
 
                 let promises = rows.map((row, index) => { // iterate over all of the post locations
                 let channel2 = client.channels.cache.get(row.cid); // get information about the message to be updated
-
                 if (!channel2) {
                     removeChannel(row.cid, "Channel is undefined");
                 }
@@ -521,7 +519,7 @@ function updateTimers(timers) {
                         limit: 1
                     })
                     .then(msg => {
-                        console.log("editting message - 🔄 -" + row.mid + " - " + index);
+                        console.log(`editting message - 🔄 - ${row.mid} - ${channel2.guild.name}`);
                         const fetchedMsg = msg.first();
                         if (!fetchedMsg) {
                             removeChannel(row.cid, "message is undefined");
@@ -531,7 +529,8 @@ function updateTimers(timers) {
             });
 
             Promise.all(promises).then(() => {
-                console.log("calling check timers in 20 sec")
+                //console.log(promiseCount + " count of promises edited")
+                console.log(promises.length + " messages - 🔄 - have been editted. calling check timers in 20 seconds")
                 setTimeout(checkTimers, 20000);
             });
 
