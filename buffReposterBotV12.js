@@ -375,7 +375,7 @@ function createTimersMap(timerString) {
     const timerMap = {};
     timersArray.forEach(item => {
         // the first word in the split should be the timer symbol of "Updated"X
-        let firstWord = item.split(" ")[0];
+        let firstWord = item.trim().split(" ")[0];
         //let firstWord = item.split(" ")[0];
         if (firstWord ===">"){
             firstWord = item.split(" ")[1];
@@ -448,13 +448,33 @@ function sendNotifications(newUpdated, oldTimer, newTimer, locations, locationNa
                 .setTimestamp();
             if (locationObj.type === 'single') {
                 //user.send(newUpdated + " Old Timer: " + oldRend + " -- > New Timer: " + newRend);
-                user.send(flashReport);
+                user.send(flashReport).catch(error => {
+                    if (error.code === 50007){
+                        console.log(user.username + " has blocked me 😭😭😭😭😭😭😭😭😭")
+                        notificationRemoval(locationName, locationObj.user, locationObj.type);
+                        return
+                    }
+                    else{
+                        logError(error.code, "send notification");
+                        return
+                    }
+                }) 
                 insertNotificationLog(locationObj.user, locationName, locationObj.type, "sent notification",user.username)
                 notificationRemoval(locationObj.location, locationObj.user, locationObj.type)
             } else if (locationObj.type === 'sub') {
                 //user.send(newUpdated + " Old Timer: " + oldRend + " -- > New Timer: " + newRend);
                 flashReport = flashReport.setFooter(`To unsubscribe from this message type !${locationName}sub`);
-                user.send(flashReport);
+                user.send(flashReport).catch(error => {
+                    if (error.code === 50007){
+                        console.log(user.username + " has blocked me 😭😭😭😭😭😭😭😭😭")
+                        notificationRemoval(locationName, locationObj.user, locationObj.type);
+                        return
+                    }
+                    else{
+                        logError(error.code, "send notification");
+                        return
+                    }
+                }) 
                 insertNotificationLog(locationObj.user, locationName, locationObj.type, "sent notification",user.username)
             }
         }
