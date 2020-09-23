@@ -1,20 +1,30 @@
 const Discord = require('discord.js');
+//var moment = require('moment-timezone');
 const {
     prefix,
     token,
     sourceChannel
 } = require('./config.json');
 const client = new Discord.Client();
+const promiseRetry = require('promise-retry');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
 const SYMBOL_MAP = {
+    ":japanese_ogre:": "rend",
     "👹": "rend",
+    ":dragon:": "ony",
     "🐉": "ony",
+    ":dragon_face:": "nef",
     "🐲": "nef",
+    ":heartpulse:": "hakkar",
     "💗": "hakkar",
+    ":wilted_rose:": "bvsf",
     "🥀": "bvsf",
+    ":crown:": "dmt",
     "👑": "dmt",
+    ":warning:": "griefer",
     "⚠️": "griefer",
+    ":circus_tent:": "dmf",
     "🎪": "dmf"
 };
 const TIMER_NAMES = new Set(Object.values(SYMBOL_MAP));
@@ -88,10 +98,10 @@ client.on('message', message => {
         }).then(messages => { //pull the latest message from source channel
                 const lastMessage = messages.first();
                 message.reply(lastMessage.content);
-                const timestampDateFormatted = new Date().toUTCString();
+                let timestampWithTimeZone = new Date().addHours(-4).toUTCString();
                 const db = getDatabase();
 
-                db.run(`INSERT INTO wb(time) VALUES(?)`, [timestampDateFormatted], function (err) {
+                db.run(`INSERT INTO wb(time) VALUES(?)`, [timestampWithTimeZone], function (err) {
                     if (err) {
                         logError(error, "wb - insert");
                         return console.log(err.message);
@@ -126,15 +136,11 @@ client.on('message', message => {
             }
         });
 
-        //insertNotification(message.author.id,"","subs")
         insertNotificationLog(message.author.id, "", "", "subs", message.author.username);
-        //insertNotificationLog(user, command, type, "insert")
 
         db.close();
     }
     else if (TIMER_NAMES.has(command)) {
-        //message.reply("notification logic")
-        //console.log(message)
         const db = getDatabase();
 
         // check to see if this user already has a notification sub for this location
@@ -300,10 +306,6 @@ function insertNotification(user, command, type){
             logError(err.message, "n - insert statement");
             return console.log(err.message);
         }
-        // get the last insert id
-        //console.log(`A notification row has been inserted with rowid ${this.lastID}`);
-        //console.log("user: " + user + " notification: " + command);
-        //console.log();
     });
 
     // close the database connection
@@ -312,11 +314,15 @@ function insertNotification(user, command, type){
     insertNotificationLog(user, command, type, "insert", userInfo.username)
 }
 
-function insertNotificationLog(user, location, type, status, userName) {
-    const timestampDateFormatted = new Date().toUTCString();
-    const db = getDatabase();
+Date.prototype.addHours= function(h){
+                    this.setHours(this.getHours()+h);
+                    return this;
+                }
 
-    db.run(`INSERT INTO notificationLog VALUES(?, ?, ?, ?, ?)`, [timestampDateFormatted, user, location, type, status], function (err) {
+function insertNotificationLog(user, location, type, status, userName) {
+    let timestampWithTimeZone = new Date().addHours(-4).toUTCString();
+    const db = getDatabase();
+    db.run(`INSERT INTO notificationLog VALUES(?, ?, ?, ?, ?)`, [timestampWithTimeZone, user, location, type, status], function (err) {
         if (err) {
             logError(err.message, "n - insert statement");
             return console.log(err.message);
@@ -390,6 +396,33 @@ function createTimersMap(timerString) {
 }
 
 function remindMe(newTimers, oldTimers){
+    function extractProps(timerType, timer){
+        //:heartpulse:  Hakkar --- 5:10pm (Gspop)  --  Whisper  Christhrows (5g)   |   Wunna  'inv' for YI summons
+        timerSplit = timer.split("---")[1]
+        //5:10pm (Gspop)  --  Whisper  Christhrows (5g)   |   Wunna  'inv' for YI summons
+        timerSplit = timerSplit.split("--")[0].trim()
+        //5:10pm (Gspop)
+        if (timerSplit.split("--")[1]){
+            summons = timerSplit.split("--")[1].trim()
+            //Whisper  Christhrows (5g)   |   Wunna  'inv' for YI summons
+        } else{
+            summons = null
+        }
+        if (timerSplit.split("(")[1]){
+            timerSplit = timerSplit.split("(")[1]
+            dropper = timerSplit.split(")")[0]
+            //Gspop
+        } else{
+            dropper = null
+        }
+        var obj = {
+            name:  timerType,
+            dropper: dropper,
+            summons: summons
+        };
+        return obj;
+
+    };
     let oldTimersMap = createTimersMap(oldTimers);
     let newTimersMap = createTimersMap(newTimers);
     // query the existing notification requests
@@ -423,6 +456,34 @@ function remindMe(newTimers, oldTimers){
                 const newVal = newTimersMap[key];
                 console.log(oldVal);
                 console.log(newVal);
+                if ( key === "hakkar" || key === "ony" || key === "rend" || key === "nef" || key === "bvsf"){
+                    oldObject = extractProps("old", oldVal);
+                    newObject = extractProps("new", newVal);
+                    console.log(oldObject);
+                    console.log(newObject);
+                    //if key is hakkar, old and new dropper are NOT null, and old and new dropper are not equal (new timer added)
+                    if (key === "hakkar" && (oldObject.dropper != null && newObject.dropper != null) && (oldObject.dropper != newObject.dropper) ){
+                        sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
+                        return
+                    }
+                    //old dropper is null and new dropper is not null/ new drop confirmed
+                    if (oldObject.dropper === null && newObject.dropper != null){
+                        sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
+                        return
+                    }
+
+                    //if there were no previous summoners and one has confirmed
+                    if (oldObject.summons === null && newObject.summons != null){
+                        sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
+                        return
+                    }
+
+                    console.log("non notification update")
+                    return
+
+
+                }
+
                 sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
             }
         });
@@ -435,6 +496,11 @@ function sendNotifications(newUpdated, oldTimer, newTimer, locations, locationNa
     locations.forEach(locationObj => {
         if (locationObj.location === locationName) {
             const user = client.users.cache.get(locationObj.user);
+            if (!user){
+                        console.log(user + " has deleted their account - removing notification")
+                        notificationRemoval(locationName, locationObj.user, locationObj.type);
+                        return
+            }
             //console.log(user)
             let flashReport = new Discord.MessageEmbed()
                 .setColor('#66ffff')
@@ -499,6 +565,10 @@ function notificationRemoval(location, user, type) {
             return console.error(err.message);
         }
     });
+    if (!userInfo){
+        insertNotificationLog(user, location, type, "removal", "")
+        return
+    }
     insertNotificationLog(user, location, type, "removal", userInfo.username)
 }
 
@@ -533,11 +603,14 @@ function updateTimers(timers) {
                 if (!channel2) {
                     removeChannel(row.cid, "Channel is undefined");
                 }
-                return channel2.messages
-                    .fetch({
-                        around: row.mid,
-                        limit: 1
-                    })
+                return promiseRetry((retry, number) => {
+                    return channel2.messages
+                        .fetch({
+                            around: row.mid,
+                            limit: 1
+                        })
+                        .catch(retry);
+                    }, {retries: 5})
                     .then(msg => {
                         console.log(`editting message - 🔄 - ${row.mid} - ${channel2.guild.name}`);
                         const fetchedMsg = msg.first();
@@ -545,11 +618,10 @@ function updateTimers(timers) {
                             removeChannel(row.cid, "message is undefined");
                         }
                         fetchedMsg.edit(timers); //update the message pulled from the database
-                    })
+                });
             });
 
             Promise.all(promises).then(() => {
-                //console.log(promiseCount + " count of promises edited")
                 console.log(promises.length + " messages - 🔄 - have been editted. calling check timers in 20 seconds")
                 setTimeout(checkTimers, 20000);
             });
@@ -588,13 +660,12 @@ function removeChannel(cid, error) {
 function logError(error, programLocation) {
     console.log("************************");
     console.log(error);
-    var timestamp = new Date();
-    var timestampDateFormatted = timestamp.toUTCString();
+    let timestampWithTimeZone = new Date().addHours(-4).toUTCString();
 
     let db = getDatabase();
 
     // TODO: need to double check the correct values are being passed to the database
-    db.run(`INSERT INTO errors VALUES(?, ?, ?)`, [error, timestampDateFormatted, programLocation], function (err) {
+    db.run(`INSERT INTO errors VALUES(?, ?, ?)`, [error, timestampWithTimeZone, programLocation], function (err) {
         if (err) {
             return console.log(err.message);
         }
