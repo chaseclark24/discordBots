@@ -80,7 +80,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 client.once('ready', () => {
-    console.log('running version: 9_4_2020');
+    console.log('running version: 9_24_2020');
     checkTimers();
 });
 
@@ -396,25 +396,48 @@ function createTimersMap(timerString) {
 }
 
 function remindMe(newTimers, oldTimers){
-    function extractProps(timerType, timer){
-        //:heartpulse:  Hakkar --- 5:10pm (Gspop)  --  Whisper  Christhrows (5g)   |   Wunna  'inv' for YI summons
-        timerSplit = timer.split("---")[1]
-        //5:10pm (Gspop)  --  Whisper  Christhrows (5g)   |   Wunna  'inv' for YI summons
-        timerSplit = timerSplit.split("--")[0].trim()
-        //5:10pm (Gspop)
-        if (timerSplit.split("--")[1]){
-            summons = timerSplit.split("--")[1].trim()
-            //Whisper  Christhrows (5g)   |   Wunna  'inv' for YI summons
-        } else{
+    function extractProps(timerType, timer, key){
+        //bvsf logic
+        if (key === "bvsf"){
+            timerSplit = timer.split(" -- ")[1]
+            if (timerSplit){
+            summons = timerSplit.trim()
+            } else{
+                summons = null
+            }
+            var obj = {
+                name:  timerType,
+                dropper: null,
+                summons: summons
+            };
+            return obj;
+        }
+
+        //logic for all other buffs
+        dropperSummons = timer.split("---")[1]
+
+        if (dropperSummons.includes("--")){
+            dropper = dropperSummons.split(" -- ")[0].trim() 
+            summons = dropperSummons.split(" -- ")[1].trim()
+            if (dropper.split("(")[1]){
+                dropper = dropper.split("(")[1]
+                dropper = dropper.split(")")[0]
+            }
+            else{
+                dropper = null
+            }
+        }
+        else{
             summons = null
+            if (dropperSummons.split("(")[1]){
+                dropper = dropperSummons.split("(")[1]
+                dropper = dropper.split(")")[0]
+            }
+            else{
+                dropper = null
+            }
         }
-        if (timerSplit.split("(")[1]){
-            timerSplit = timerSplit.split("(")[1]
-            dropper = timerSplit.split(")")[0]
-            //Gspop
-        } else{
-            dropper = null
-        }
+
         var obj = {
             name:  timerType,
             dropper: dropper,
@@ -457,8 +480,8 @@ function remindMe(newTimers, oldTimers){
                 console.log(oldVal);
                 console.log(newVal);
                 if ( key === "hakkar" || key === "ony" || key === "rend" || key === "nef" || key === "bvsf"){
-                    oldObject = extractProps("old", oldVal);
-                    newObject = extractProps("new", newVal);
+                    oldObject = extractProps("old", oldVal, key);
+                    newObject = extractProps("new", newVal, key);
                     console.log(oldObject);
                     console.log(newObject);
                     //if key is hakkar, old and new dropper are NOT null, and old and new dropper are not equal (new timer added)
@@ -466,6 +489,7 @@ function remindMe(newTimers, oldTimers){
                         sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
                         return
                     }
+
                     //old dropper is null and new dropper is not null/ new drop confirmed
                     if (oldObject.dropper === null && newObject.dropper != null){
                         sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
