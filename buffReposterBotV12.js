@@ -396,59 +396,66 @@ function createTimersMap(timerString) {
     return timerMap;
 }
 
-function remindMe(newTimers, oldTimers){
-    function extractProps(timerType, timer, key){
-        //bvsf logic
-        if (key === "bvsf"){
-            timerSplit = timer.split(" -- ")[1]
-            if (timerSplit){
-            summons = timerSplit.trim()
-            } else{
-                summons = null
+/**
+ * Used to break apart strings into component parts.
+ */
+const REGEX_PARSE_MAP = {
+    "rend": {
+        expr: /:japanese_ogre:\s+Rend\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?)(?:\s\((?:[^\s]+)\))?(?:(?:,\s{2}(?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm))?)(?:\s\((?:[^\s]+)\)))*)/,
+        dropperGroup: 1,
+        summonerGroup: undefined
+    },
+    "ony": {
+        expr: /:dragon:\s+Ony\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?)(?:\s\((?:[^\s]+)\))?(?:(?:,\s{2}(?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm))?)(?:\s\((?:[^\s]+)\)))*)/,
+        dropperGroup: 1,
+        summonerGroup: undefined
+    },
+    "nef": {
+        expr: /:dragon_face:\s+Nef\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?)(?:\s\((?:[^\s]+)\))?(?:(?:,\s{2}(?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm))?)(?:\s\((?:[^\s]+)\)))*)/,
+        dropperGroup: 1,
+        summonerGroup: undefined
+    },
+    "hakkar": {
+        expr: /:heartpulse:\s{2}Hakkar\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?)(?:\s\((?:[^\s]+)\))?(?:(?:,\s{2}(?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm))?)(?:\s\((?:[^\s]+)\)))*)(?:\s{2}--\s{2}Whisper\s{2}(.+)\s{2}'inv' for YI summons)?/,
+        dropperGroup: 1,
+        summonerGroup: 2,
+    },
+    "bvsf:": {
+        expr: /:wilted_rose:\s+BVSF\s---\s(\d{1,2}:\d{2}(?:am|pm) -> \d{1,2}:\d{2}(?:am|pm) -> \d{1,2}:\d{2}(?:am|pm))?(?:\s{2}--\s{2}Whisper\s{2}(.+)\s{2}'inv' for summons)?/,
+        dropperGroup: undefined,
+        summonerGroup: 2,
+    },
+    "dmt": {
+        expr: /:crown:\s+DMT\s---(?:\sWhisper\s{2}(.+)\s{2}'inv' for DM buffs)?/,
+        dropperGroup: 1,
+        summonerGroup: undefined,
+    },
+};
+
+function remindMe(newTimers, oldTimers) {
+
+    function extractProperties(symbol, timerString) {
+        let parseEntry = REGEX_PARSE_MAP[symbol];
+        let matchObj = timerString.match(parseEntry.expr)
+        /**
+         * Example parse
+         * 10:00am (Carnaj), 12:00pm (Dxkrookd) ->
+         * [{dropper: 'Carnaj', time: '10:00am'}, {dropper: 'Dxkrookd', time: '12:00pm'}
+         */
+        let dropperObjs = matchObj[parseEntry.dropperGroup].split(',').map(entry => {
+            let split = entry.trim().split(' ')
+            return {
+                dropper: split.length === 2 ? split[1].replace(/[()]/g, '') : undefined,
+                time: split[1]
             }
-            var obj = {
-                name:  timerType,
-                dropper: null,
-                summons: summons
-            };
-            return obj;
+        })
+
+        return {
+            droppers: dropperObjs,
+            summoners: matchObj[parseEntry.summonerGroup]
         }
+    }
 
-
-
-        //logic for all other buffs
-        dropperSummons = timer.split("---")[1]
-
-        if (dropperSummons.includes("--")){
-            dropper = dropperSummons.split(" -- ")[0].trim() 
-            summons = dropperSummons.split(" -- ")[1].trim()
-            if (dropper.split("(")[1]){
-                //dropper = dropper.split("(")[1]
-                dropper = dropper
-            }
-            else{
-                dropper = null
-            }
-        }
-        else{
-            summons = null
-            if (dropperSummons.split("(")[1]){
-                //dropper = dropper.split("(")[1]
-                dropper = dropper
-            }
-            else{
-                dropper = null
-            }
-        }
-
-        var obj = {
-            name:  timerType,
-            dropper: dropper,
-            summons: summons
-        };
-        return obj;
-
-    };
     let oldTimersMap = createTimersMap(oldTimers);
     let newTimersMap = createTimersMap(newTimers);
     // query the existing notification requests
@@ -483,42 +490,36 @@ function remindMe(newTimers, oldTimers){
                 console.log(oldVal);
                 console.log(newVal);
                 console.log(key)
-                if ( key === "hakkar" || key === "ony" || key === "rend" || key === "nef" || key === "bvsf"){
-                    oldObject = extractProps("old", oldVal, key);
-                    newObject = extractProps("new", newVal, key);
-                    console.log(oldObject);
-                    console.log(newObject);
-                    //if key is hakkar, old and new dropper are NOT null, and old and new dropper are not equal (new timer added)
-                    if (key === "hakkar" && (oldObject.dropper != null && newObject.dropper != null) && (oldObject.dropper != newObject.dropper) ){
-                        var oldDroppers = oldObject.dropper.split(",");
-                        var newDroppers = newObject.dropper.split(",");
-                        //if newdropper does not match any old droppers, send update
-                        newDroppers.forEach(newDropper => {
-                            if(oldDroppers.indexOf(newDropper) === -1 ){
-                                    sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
-                                    return
-                            }
-                        })
-    
-                        
+                if (REGEX_PARSE_MAP.keys().includes(key)) {
+                    let oldObjectProperties = extractProperties(key, oldVal);
+                    let newObjectProperties = extractProperties(key, newVal);
+                    console.log(oldObjectProperties);
+                    console.log(newObjectProperties);
+
+                    // old and new dropper are NOT null
+                    if ((oldObjectProperties.droppers != null && newObjectProperties.droppers != null)) {
+                        // if at least one new dropper does not match any old droppers, send update
+                        let oldDroppers = new Set(oldObjectProperties.droppers.map(entry => entry.dropper));
+                        let newDroppers = new Set(newObjectProperties.droppers.map(entry => entry.dropper));
+                        if (newDroppers.some(newDropper => !oldDroppers.has(newDropper))) {
+                            sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
+                        }
                     }
 
-                    //old dropper is null and new dropper is not null/ new drop confirmed
-                    if (oldObject.dropper === null && newObject.dropper != null){
+                    // old dropper is null and new dropper is not null/ new drop confirmed
+                    if (oldObjectProperties.dropper === null && newObjectProperties.dropper !== null) {
                         sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
                         return
                     }
 
-                    //if there were no previous summoners and one has confirmed
-                    if (oldObject.summons === null && newObject.summons != null){
+                    // if there were no previous summoners and one has confirmed
+                    if (oldObjectProperties.summoners === null && newObjectProperties.summoners !== null) {
                         sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
                         return
                     }
 
                     console.log("non notification update")
                     return
-
-
                 }
 
                 sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
