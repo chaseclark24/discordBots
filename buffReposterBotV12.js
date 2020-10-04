@@ -442,7 +442,8 @@ function remindMe(newTimers, oldTimers) {
          * 10:00am (Carnaj), 12:00pm (Dxkrookd) ->
          * [{dropper: 'Carnaj', time: '10:00am'}, {dropper: 'Dxkrookd', time: '12:00pm'}
          */
-        let dropperObjs = matchObj[parseEntry.dropperGroup].split(',').map(entry => {
+        let delim = matchObj[parseEntry.dropperGroup].includes(',') ? ',' : '|';
+        let dropperObjs = matchObj[parseEntry.dropperGroup].split(delim).map(entry => {
             let split = entry.trim().split(' ')
             return {
                 dropper: split.length === 2 ? split[1].replace(/[()]/g, '') : undefined,
