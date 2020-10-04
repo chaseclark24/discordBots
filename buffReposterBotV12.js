@@ -505,24 +505,20 @@ function remindMe(newTimers, oldTimers) {
                             sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
                         }
                     }
-
                     // old dropper is null and new dropper is not null/ new drop confirmed
-                    if (oldObjectProperties.dropper === null && newObjectProperties.dropper !== null) {
+                    else if (oldObjectProperties.droppers === null && newObjectProperties.droppers !== null) {
                         sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
-                        return
                     }
 
                     // if there were no previous summoners and one has confirmed
-                    if (oldObjectProperties.summoners === null && newObjectProperties.summoners !== null) {
+                    else if (oldObjectProperties.summoners === null && newObjectProperties.summoners !== null) {
                         sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
-                        return
                     }
 
                     console.log("non notification update")
-                    return
+                } else {
+                    sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
                 }
-
-                sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
             }
         });
     });
