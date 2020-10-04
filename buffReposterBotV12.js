@@ -426,9 +426,9 @@ const REGEX_PARSE_MAP = {
         summonerGroup: 2,
     },
     "dmt": {
-        expr: /:crown:\s+DMT\s---(?:\sWhisper\s{2}(.+)\s{2}'inv' for DM buffs)?/,
+        expr: /:crown:\s+DMT\s---(?:\sWhisper\s{2}(.+)\s{2}'inv' for DM buffs)?(?:\s{2}--\s{2}Whisper\s{2}(.+)\s{2}'inv' for summons)/,
         dropperGroup: 1,
-        summonerGroup: undefined,
+        summonerGroup: 2,
     },
 };
 
@@ -491,7 +491,7 @@ function remindMe(newTimers, oldTimers) {
                 console.log(oldVal);
                 console.log(newVal);
                 console.log(key)
-                if (REGEX_PARSE_MAP.keys().includes(key)) {
+                if (Object.keys(REGEX_PARSE_MAP).includes(key)) {
                     let oldObjectProperties = extractProperties(key, oldVal);
                     let newObjectProperties = extractProperties(key, newVal);
                     console.log(oldObjectProperties);
