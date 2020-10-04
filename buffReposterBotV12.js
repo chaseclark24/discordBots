@@ -10,21 +10,22 @@ const promiseRetry = require('promise-retry');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
 const SYMBOL_MAP = {
-    ":japanese_ogre:": "rend",
-    "👹": "rend",
-    ":dragon:": "ony",
+    //alternate these for testing and prod
+    // ":japanese_ogre:": "rend",
+    // ":dragon:": "ony",
+    // ":dragon_face:": "nef",
+    // ":heartpulse:": "hakkar",
+    // ":wilted_rose:": "bvsf",
+    // ":crown:": "dmt",
+    // ":warning:": "griefer",
+    // ":circus_tent:": "dmf",
     "🐉": "ony",
-    ":dragon_face:": "nef",
     "🐲": "nef",
-    ":heartpulse:": "hakkar",
     "💗": "hakkar",
-    ":wilted_rose:": "bvsf",
     "🥀": "bvsf",
-    ":crown:": "dmt",
     "👑": "dmt",
-    ":warning:": "griefer",
     "⚠️": "griefer",
-    ":circus_tent:": "dmf",
+    "👹": "rend",
     "🎪": "dmf"
 };
 const TIMER_NAMES = new Set(Object.values(SYMBOL_MAP));
@@ -413,6 +414,8 @@ function remindMe(newTimers, oldTimers){
             return obj;
         }
 
+
+
         //logic for all other buffs
         dropperSummons = timer.split("---")[1]
 
@@ -420,8 +423,8 @@ function remindMe(newTimers, oldTimers){
             dropper = dropperSummons.split(" -- ")[0].trim() 
             summons = dropperSummons.split(" -- ")[1].trim()
             if (dropper.split("(")[1]){
-                dropper = dropper.split("(")[1]
-                dropper = dropper.split(")")[0]
+                //dropper = dropper.split("(")[1]
+                dropper = dropper
             }
             else{
                 dropper = null
@@ -430,8 +433,8 @@ function remindMe(newTimers, oldTimers){
         else{
             summons = null
             if (dropperSummons.split("(")[1]){
-                dropper = dropperSummons.split("(")[1]
-                dropper = dropper.split(")")[0]
+                //dropper = dropper.split("(")[1]
+                dropper = dropper
             }
             else{
                 dropper = null
@@ -479,6 +482,7 @@ function remindMe(newTimers, oldTimers){
                 const newVal = newTimersMap[key];
                 console.log(oldVal);
                 console.log(newVal);
+                console.log(key)
                 if ( key === "hakkar" || key === "ony" || key === "rend" || key === "nef" || key === "bvsf"){
                     oldObject = extractProps("old", oldVal, key);
                     newObject = extractProps("new", newVal, key);
@@ -486,7 +490,19 @@ function remindMe(newTimers, oldTimers){
                     console.log(newObject);
                     //if key is hakkar, old and new dropper are NOT null, and old and new dropper are not equal (new timer added)
                     if (key === "hakkar" && (oldObject.dropper != null && newObject.dropper != null) && (oldObject.dropper != newObject.dropper) ){
-                        sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
+                        var oldDroppers = oldObject.dropper.split(",");
+                        var newDroppers = newObject.dropper.split(",");
+                        //if newdropper does not match any old droppers, send update
+                        newDroppers.forEach(newDropper => {
+                            oldDroppers.forEach(oldDropper => {
+                                console.log(newDropper + " new dropper ")
+                                console.log(oldDropper + " old dropper ")
+                                if (newDropper != oldDropper) {
+                                    sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
+                                }
+                            })
+                        })
+                        
                         return
                     }
 
