@@ -494,16 +494,13 @@ function remindMe(newTimers, oldTimers){
                         var newDroppers = newObject.dropper.split(",");
                         //if newdropper does not match any old droppers, send update
                         newDroppers.forEach(newDropper => {
-                            oldDroppers.forEach(oldDropper => {
-                                console.log(newDropper + " new dropper ")
-                                console.log(oldDropper + " old dropper ")
-                                if (newDropper != oldDropper) {
+                            if(oldDroppers.indexOf(newDropper) === -1 ){
                                     sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
-                                }
-                            })
+                                    return
+                            }
                         })
+    
                         
-                        return
                     }
 
                     //old dropper is null and new dropper is not null/ new drop confirmed
