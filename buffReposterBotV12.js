@@ -401,62 +401,111 @@ function createTimersMap(timerString) {
  */
 const REGEX_PARSE_MAP = {
     "rend": {
-        expr: /:japanese_ogre:\s+Rend\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?)(?:\s\((?:[^\s]+)\))?(?:(?:,\s{2}(?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm))?)(?:\s\((?:[^\s]+)\)))*)/,
-        dropperGroup: 1,
+        expr: /:japanese_ogre:\s+Rend\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?))\s?((\(\d{1,2}:\d{1,2}(?:am|pm)\s-\s)?.+)?/,
+        coolDownGroup: 1,
+        dropperGroup: 2,
         summonerGroup: undefined
     },
     "ony": {
-        expr: /:dragon:\s+Ony\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?)(?:\s\((?:[^\s]+)\))?(?:(?:,\s{2}(?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm))?)(?:\s\((?:[^\s]+)\)))*)/,
-        dropperGroup: 1,
+        expr: /:dragon:\s+Ony\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?))\s?((\(\d{1,2}:\d{1,2}(?:am|pm)\s-\s)?.+)?/,
+        coolDownGroup: 1,
+        dropperGroup: 2,
         summonerGroup: undefined
     },
     "nef": {
-        expr: /:dragon_face:\s+Nef\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?)(?:\s\((?:[^\s]+)\))?(?:(?:,\s{2}(?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm))?)(?:\s\((?:[^\s]+)\)))*)/,
-        dropperGroup: 1,
+        expr: /:dragon_face:\s+Nef\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?))\s?((\(\d{1,2}:\d{1,2}(?:am|pm)\s-\s)?.+)?/,
+        coolDownGroup: 1,
+        dropperGroup: 2,
         summonerGroup: undefined
     },
     "hakkar": {
         expr: /:heartpulse:\s{2}Hakkar\s---\s((?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm)?)(?:\s\((?:[^\s]+)\))?(?:(?:,\s{2}(?:(?:\d{1,2}|\?{1,2}):(?:\d{1,2}|\?{1,2})(?:am|pm))?)(?:\s\((?:[^\s]+)\)))*)(?:\s{2}--\s{2}Whisper\s{2}(.+)\s{2}'inv' for YI summons)?/,
+        coolDownGroup: undefined,
         dropperGroup: 1,
         summonerGroup: 2,
     },
     "bvsf:": {
         expr: /:wilted_rose:\s+BVSF\s---\s(\d{1,2}:\d{2}(?:am|pm) -> \d{1,2}:\d{2}(?:am|pm) -> \d{1,2}:\d{2}(?:am|pm))?(?:\s{2}--\s{2}Whisper\s{2}(.+)\s{2}'inv' for summons)?/,
+        coolDownGroup: undefined,
         dropperGroup: undefined,
         summonerGroup: 2,
     },
     "dmt": {
         expr: /:crown:\s+DMT\s---(?:\sWhisper\s{2}(.+)\s{2}'inv' for DM buffs)?(?:\s{2}--\s{2}Whisper\s{2}(.+)\s{2}'inv' for summons)/,
+        coolDownGroup: undefined,
         dropperGroup: 1,
         summonerGroup: 2,
     },
 };
 
-function remindMe(newTimers, oldTimers) {
-
-    function extractProperties(symbol, timerString) {
-        let parseEntry = REGEX_PARSE_MAP[symbol];
-        let matchObj = timerString.match(parseEntry.expr)
-        /**
-         * Example parse
-         * 10:00am (Carnaj), 12:00pm (Dxkrookd) ->
-         * [{dropper: 'Carnaj', time: '10:00am'}, {dropper: 'Dxkrookd', time: '12:00pm'}
-         */
-        let delim = matchObj[parseEntry.dropperGroup].includes(',') ? ',' : '|';
-        let dropperObjs = matchObj[parseEntry.dropperGroup].split(delim).map(entry => {
-            let split = entry.trim().split(' ')
-            return {
-                dropper: split.length === 2 ? split[1].replace(/[()]/g, '') : undefined,
-                time: split[1]
-            }
-        })
-
+/**
+ *
+ * @param symbol - string classifying the timerString (rend, ony, nef, hakkar, etc)
+ * @param timerString - the raw string from the bot
+ *
+ * Rend --- 3:00pm (Renddropper),  (6:00pm - Nextdropper)
+ * Ony --- 2:01am (Baae)
+ * Nef --- 3:46am (5:00am - Ba),  (6:00am - Baergr)
+ * Hakkar --- 7:00pm (Hakkardrop),  9:15pm (Hakkarnotdrop)
+ *
+ * Example parse
+ * 10:00am (Carnaj), 12:00pm (Dxkrookd) ->
+ * [{dropper: 'Carnaj', time: '10:00am'}, {dropper: 'Dxkrookd', time: '12:00pm'}
+ */
+function extractPropertiesWithRegex(symbol, timerString) {
+    let parseEntry = REGEX_PARSE_MAP[symbol];
+    let matchObj = timerString.match(parseEntry.expr)
+    if (matchObj !== null) {
+        let dropperObjs = [];
+        if (symbol === 'hakkar') {
+            dropperObjs = matchObj[parseEntry.dropperGroup].split(',').map(entry => {
+                let split = entry.trim().split(' ')
+                return {
+                    dropper: split.length === 2 ? split[1].replace(/[()]/g, '') : undefined,
+                    time: split[1]
+                }
+            })
+        } else if (symbol === 'ony' || symbol === 'nef' || symbol === 'rend') {
+            let coolDown = matchObj[parseEntry.coolDownGroup].trim();
+            dropperObjs = matchObj[parseEntry.dropperGroup].split(',').map((entry, index) => {
+                // first entry may be the same as cool down time
+                if (index === 0 && !entry.includes('-')) {
+                    return {
+                        dropper: entry.trim().replace(/[()]/g, ''),
+                        time: coolDown
+                    }
+                } else {
+                    let entrySplit = entry.trim().replace(/[()]/g, '').split('-')
+                    return {
+                        dropper: entrySplit[1].trim(),
+                        time: entrySplit[0].trim()
+                    }
+                }
+            })
+        } else if (symbol === 'bvsf' || symbol === 'dmt') {
+            dropperObjs = matchObj[parseEntry.dropperGroup].trim().split('|').map(entry => {
+                return {
+                    dropper: entry.trim(),
+                    time: undefined
+                }
+            });
+        } else {
+            console.log(`Unknown symbol ${symbol} to extract properties from in ${timerString}`);
+        }
         return {
             droppers: dropperObjs,
             summoners: matchObj[parseEntry.summonerGroup]
         }
+    } else {
+        console.log(`${timerString} did not match regex for ${symbol}`);
+        return {
+            droppers: undefined,
+            summoners: undefined
+        }
     }
+}
 
+function remindMe(newTimers, oldTimers) {
     let oldTimersMap = createTimersMap(oldTimers);
     let newTimersMap = createTimersMap(newTimers);
     // query the existing notification requests
@@ -492,8 +541,8 @@ function remindMe(newTimers, oldTimers) {
                 console.log(newVal);
                 console.log(key)
                 if (Object.keys(REGEX_PARSE_MAP).includes(key)) {
-                    let oldObjectProperties = extractProperties(key, oldVal);
-                    let newObjectProperties = extractProperties(key, newVal);
+                    let oldObjectProperties = extractPropertiesWithRegex(key, oldVal);
+                    let newObjectProperties = extractPropertiesWithRegex(key, newVal);
                     console.log(oldObjectProperties);
                     console.log(newObjectProperties);
 
@@ -501,7 +550,7 @@ function remindMe(newTimers, oldTimers) {
                     if ((oldObjectProperties.droppers != null && newObjectProperties.droppers != null)) {
                         // if at least one new dropper does not match any old droppers, send update
                         let oldDroppers = new Set(oldObjectProperties.droppers.map(entry => entry.dropper));
-                        let newDroppers = new Set(newObjectProperties.droppers.map(entry => entry.dropper));
+                        let newDroppers = newObjectProperties.droppers.map(entry => entry.dropper);
                         if (newDroppers.some(newDropper => !oldDroppers.has(newDropper))) {
                             sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
                         }
