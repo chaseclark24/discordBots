@@ -458,37 +458,43 @@ function extractPropertiesWithRegex(symbol, timerString) {
     if (matchObj !== null) {
         let dropperObjs = [];
         if (symbol === 'hakkar') {
-            dropperObjs = matchObj[parseEntry.dropperGroup].split(',').map(entry => {
-                let split = entry.trim().split(' ')
-                return {
-                    dropper: split.length === 2 ? split[1].replace(/[()]/g, '') : undefined,
-                    time: split[1]
-                }
-            })
+            if (matchObj[parseEntry.dropperGroup] !== undefined) {
+                dropperObjs = matchObj[parseEntry.dropperGroup].split(',').map(entry => {
+                    let split = entry.trim().split(' ')
+                    return {
+                        dropper: split.length === 2 ? split[1].replace(/[()]/g, '') : undefined,
+                        time: split[1]
+                    }
+                })
+            }
         } else if (symbol === 'ony' || symbol === 'nef' || symbol === 'rend') {
             let coolDown = matchObj[parseEntry.coolDownGroup].trim();
-            dropperObjs = matchObj[parseEntry.dropperGroup].split(',').map((entry, index) => {
-                // first entry may be the same as cool down time
-                if (index === 0 && !entry.includes('-')) {
-                    return {
-                        dropper: entry.trim().replace(/[()]/g, ''),
-                        time: coolDown
+            if (matchObj[parseEntry.dropperGroup] !== undefined) {
+                dropperObjs = matchObj[parseEntry.dropperGroup].split(',').map((entry, index) => {
+                    // first entry may be the same as cool down time
+                    if (index === 0 && !entry.includes('-')) {
+                        return {
+                            dropper: entry.trim().replace(/[()]/g, ''),
+                            time: coolDown
+                        }
+                    } else {
+                        let entrySplit = entry.trim().replace(/[()]/g, '').split('-')
+                        return {
+                            dropper: entrySplit[1].trim(),
+                            time: entrySplit[0].trim()
+                        }
                     }
-                } else {
-                    let entrySplit = entry.trim().replace(/[()]/g, '').split('-')
-                    return {
-                        dropper: entrySplit[1].trim(),
-                        time: entrySplit[0].trim()
-                    }
-                }
-            })
+                })
+            }
         } else if (symbol === 'bvsf' || symbol === 'dmt') {
-            dropperObjs = matchObj[parseEntry.dropperGroup].trim().split('|').map(entry => {
-                return {
-                    dropper: entry.trim(),
-                    time: undefined
-                }
-            });
+            if (matchObj[parseEntry.dropperGroup] !== undefined) {
+                dropperObjs = matchObj[parseEntry.dropperGroup].trim().split('|').map(entry => {
+                    return {
+                        dropper: entry.trim(),
+                        time: undefined
+                    }
+                });
+            }
         } else {
             console.log(`Unknown symbol ${symbol} to extract properties from in ${timerString}`);
         }
