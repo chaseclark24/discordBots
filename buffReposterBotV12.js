@@ -552,8 +552,11 @@ function remindMe(newTimers, oldTimers) {
                     console.log(oldObjectProperties);
                     console.log(newObjectProperties);
 
+                    // determine if an object property should be considered "false"
+                    let resolvesToFalse = (value) => value === undefined || value === null || value.length === 0;
+
                     // old and new dropper are NOT null
-                    if ((oldObjectProperties.droppers != null && newObjectProperties.droppers != null)) {
+                    if (!resolvesToFalse(oldObjectProperties.droppers) && !resolvesToFalse(newObjectProperties.droppers)) {
                         // if at least one new dropper does not match any old droppers, send update
                         let oldDroppers = new Set(oldObjectProperties.droppers.map(entry => entry.dropper));
                         let newDroppers = newObjectProperties.droppers.map(entry => entry.dropper);
@@ -562,12 +565,12 @@ function remindMe(newTimers, oldTimers) {
                         }
                     }
                     // old dropper is null and new dropper is not null/ new drop confirmed
-                    else if (oldObjectProperties.droppers === null && newObjectProperties.droppers !== null) {
+                    else if (resolvesToFalse(oldObjectProperties.droppers) && !resolvesToFalse(newObjectProperties.droppers)) {
                         sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
                     }
 
                     // if there were no previous summoners and one has confirmed
-                    else if (oldObjectProperties.summoners === null && newObjectProperties.summoners !== null) {
+                    else if (resolvesToFalse(oldObjectProperties.summoners) && !resolvesToFalse(newObjectProperties.summoners)) {
                         sendNotifications(newTimersMap["Updated"], oldVal, newVal, locations, key)
                     }
 
