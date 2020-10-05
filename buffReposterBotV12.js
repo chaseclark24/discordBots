@@ -462,8 +462,8 @@ function extractPropertiesWithRegex(symbol, timerString) {
                 dropperObjs = matchObj[parseEntry.dropperGroup].split(',').map(entry => {
                     let split = entry.trim().split(' ')
                     return {
-                        dropper: split.length === 2 ? split[1].replace(/[()]/g, '') : undefined,
-                        time: split[1]
+                        dropper: split.length === 2 ? split[1].replace(/[()*]/g, '') : undefined,
+                        time: split[0]
                     }
                 })
             }
