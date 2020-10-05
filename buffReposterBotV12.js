@@ -518,7 +518,6 @@ function remindMe(newTimers, oldTimers) {
     let db = getDatabase();
 
     let sql = `SELECT user,location,type FROM notifications`;
-    const locations = [];
 
     db.all(sql, [], (err, rows) => {
         if (err) {
@@ -530,10 +529,8 @@ function remindMe(newTimers, oldTimers) {
             return;
         }
 
-        rows.forEach(row => {
-            //push all notification requests into an array
-            locations.push({"location": row.location, "user": row.user, "type": row.type});
-            return row
+        const locations = rows.map(row => {
+            return {"location": row.location, "user": row.user, "type": row.type}
         });
 
         //if any of the buff timers are not matching, update the notification requests that match the buffs that changed
